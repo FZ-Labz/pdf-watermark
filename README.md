@@ -18,9 +18,9 @@ PDF Watermark
 </p>
 
 <p align="center">
-<a href="https://github.com/Fahim8371/pdf-watermark/releases/latest"><img src="https://img.shields.io/github/v/release/Fahim8371/pdf-watermark?label=release&color=4c8dff" alt="Latest release" /></a>
-<a href="https://github.com/Fahim8371/pdf-watermark/releases"><img src="https://img.shields.io/github/downloads/Fahim8371/pdf-watermark/total?color=4c8dff" alt="Downloads" /></a>
-<a href="https://github.com/Fahim8371/pdf-watermark/actions/workflows/ci.yml"><img src="https://github.com/Fahim8371/pdf-watermark/actions/workflows/ci.yml/badge.svg" alt="Tests" /></a>
+<a href="https://github.com/FZ-Labz/pdf-watermark/releases/latest"><img src="https://img.shields.io/github/v/release/FZ-Labz/pdf-watermark?label=release&color=4c8dff" alt="Latest release" /></a>
+<a href="https://github.com/FZ-Labz/pdf-watermark/releases"><img src="https://img.shields.io/github/downloads/FZ-Labz/pdf-watermark/total?color=4c8dff" alt="Downloads" /></a>
+<a href="https://github.com/FZ-Labz/pdf-watermark/actions/workflows/ci.yml"><img src="https://github.com/FZ-Labz/pdf-watermark/actions/workflows/ci.yml/badge.svg" alt="Tests" /></a>
 <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MIT-blue" alt="MIT licence" /></a>
 </p>
 
@@ -87,13 +87,13 @@ right on all of them.
 
 ## 💿 Download
 
-📦 **[PDF-Watermark-Windows.exe](https://github.com/Fahim8371/pdf-watermark/releases/latest/download/PDF-Watermark-Windows.exe)** — about 32 MB
+📦 **[PDF-Watermark-Windows.exe](https://github.com/FZ-Labz/pdf-watermark/releases/latest/download/PDF-Watermark-Windows.exe)** — about 32 MB
 
 > 💡 Runs on Windows 10 and 11. Nothing to install: download it and double-click.
 > The first time, Windows may show *"Windows protected your PC"* because the app
 > isn't code-signed yet — click **More info**, then **Run anyway**. It only asks once.
 
-All versions are on the [Releases page](https://github.com/Fahim8371/pdf-watermark/releases).
+All versions are on the [Releases page](https://github.com/FZ-Labz/pdf-watermark/releases).
 A Mac version is planned; in the meantime the command line runs on macOS and Linux.
 
 Windows releases are built by GitHub Actions straight from this repository and
@@ -200,7 +200,7 @@ pdf-watermark
 
 1. Clone the repository:
 ```sh
-git clone https://github.com/Fahim8371/pdf-watermark.git
+git clone https://github.com/FZ-Labz/pdf-watermark.git
 ```
 
 2. Change to the project directory:
@@ -335,7 +335,7 @@ never stack up.
 ### 🩺 If something goes wrong
 
 - **A file shows "can't be marked"** — it is damaged or needs a password. Open it, save an unprotected copy, and add that.
-- **The app misbehaves** — it keeps a log at `%APPDATA%\PDF Watermark\app.log`. Attaching it to an [issue](https://github.com/Fahim8371/pdf-watermark/issues) makes the problem much quicker to find.
+- **The app misbehaves** — it keeps a log at `%APPDATA%\PDF Watermark\app.log`. Attaching it to an [issue](https://github.com/FZ-Labz/pdf-watermark/issues) makes the problem much quicker to find.
 - **A watermark is not access control.** It marks where a copy came from and discourages passing it on. *Extra protection* makes it much harder to remove; for real restrictions, use encryption or a rights-management system.
 
 ---
@@ -367,8 +367,8 @@ those builds are submitted for signing.
 
 | Role | Members |
 | --- | --- |
-| Committers and reviewers | [Fahim8371](https://github.com/Fahim8371) |
-| Approvers | [Fahim8371](https://github.com/Fahim8371) |
+| Committers and reviewers | [FZ-Labz](https://github.com/FZ-Labz) |
+| Approvers | [FZ-Labz](https://github.com/FZ-Labz) |
 
 Changes from anyone outside the committers are reviewed before they are merged,
 and every signing request is approved by an approver. All team members use

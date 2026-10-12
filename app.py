@@ -35,7 +35,7 @@ import fonts
 import watermark as wm
 
 APP_NAME = "PDF Watermark"
-HELP_URL = "https://github.com/Fahim8371/pdf-watermark#readme"
+HELP_URL = "https://github.com/FZ-Labz/pdf-watermark#readme"
 COLORS = {"grey": "#999999", "red": "#d93333", "blue": "#2659d9", "black": "#000000"}
 
 
