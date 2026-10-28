@@ -19,8 +19,8 @@ const ICON = {
   x: '<svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>',
   chev: '<svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>',
   user: '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
-  bookmark: '<svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>',
   tick: '<svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
+  alert: '<svg viewBox="0 0 24 24"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/></svg>',
 };
 
 const state = {
@@ -217,15 +217,22 @@ function render() {
   next.textContent = last ? `Watermark ${plural(files, "copy", "copies")}` : "Continue";
   next.className = "btn " + (last ? "btn-accent" : "btn-light");
   next.disabled = last ? (state.out.mode === "custom" && !state.out.dir) : !canEnter(state.step + 1);
+  $("#nextHint").textContent = next.disabled ? blockedReason() : "";
 
   renderNotice();
   [renderFiles, renderDesign, renderExport][state.step]();
 }
 
+// Shown beside a disabled Continue, so a greyed-out button is never a dead end.
+function blockedReason() {
+  if (state.step === 0) return "Add at least one PDF to continue.";
+  if (state.step === 1) return "Add at least one company to continue.";
+  return "Choose a folder to save to, or pick Next to the originals.";
+}
+
 function renderNotice() {
   let msg = "";
   if (state.step === 0 && state.sources.length && pdfCount() === 0) msg = "None of those contain any PDFs. Try a different folder.";
-  if (state.step === 1 && state.recipients.length === 0) msg = "Add at least one company to continue.";
   $("#notice").hidden = !msg;
   $("#noticeText").textContent = msg;
 }
@@ -253,13 +260,20 @@ function renderFiles() {
     ].join("");
     const skipped = s.ignored_files || [];
     const more = s.ignored - skipped.slice(0, 5).length;
-    const list = (problems.length || skipped.length)
-      ? `<ul class="src-problems">${problems.map(p =>
-          `<li>${esc(p.rel)}<span>— ${esc(p.reason)}, will be left out</span></li>`).join("")}</ul>` +
-        (skipped.length ? `<ul class="src-problems src-skipped">${skipped.slice(0, 5).map(f =>
-          `<li>${esc(f)}<span>— not a PDF, left as it is</span></li>`).join("")}${more > 0
-          ? `<li><span>and ${more} more ${more === 1 ? "file" : "files"} that aren't PDFs</span></li>` : ""}</ul>` : "")
-      : "";
+    // PDFs that can't be marked are left out of every copy - in a pack sent
+    // to other people that matters, so it reads as a warning. Files that
+    // aren't PDFs were never in scope, so they stay quiet.
+    const list =
+      (problems.length ? `<div class="src-issues warn">
+        <div class="issue-head">${ICON.alert}<b>${problems.length === 1 ? "This PDF won't" : "These PDFs won't"} be watermarked</b>
+          <span>Left out of every copy</span></div>
+        <ul>${problems.map(p => `<li><b>${esc(p.rel)}</b><span>${esc(p.reason)}</span></li>`).join("")}</ul>
+      </div>` : "") +
+      (skipped.length ? `<div class="src-issues quiet">
+        <div class="issue-head"><b>Not PDFs</b><span>Skipped and left as they are</span></div>
+        <ul>${skipped.slice(0, 5).map(f => `<li><b>${esc(f)}</b></li>`).join("")}${more > 0
+          ? `<li><span>and ${plural(more, "more file")}</span></li>` : ""}</ul>
+      </div>` : "");
     return `<li class="source-wrap"><div class="source">
       <div class="src-icon" style="--tint:${tint}">${s.kind === "folder" ? ICON.folder : ICON.file}</div>
       <div class="src-main"><div class="src-name">${esc(s.name)}</div><div class="src-path">${esc(s.path)}</div></div>
@@ -278,6 +292,14 @@ function renderDesign() {
   renderPlacement();
   $("#flattenToggle").checked = state.flatten;
   renderPreview();
+  updateScrollCue();
+}
+
+// The controls column scrolls inside a fixed frame, so without a cue the
+// lower controls look like they don't exist. Fade the edge while more is below.
+function updateScrollCue() {
+  const el = $("#designControls");
+  el.classList.toggle("more-below", el.scrollTop + el.clientHeight < el.scrollHeight - 4);
 }
 
 /* Recipients */
@@ -316,8 +338,8 @@ function renderRecipients() {
         <span class="dot"></span>
         <span class="rmain"><span class="rname">${esc(r)}</span><span class="rtext">${esc(shown(watermarkText(r)))}</span></span>
         <button class="save ${isSaved(r) ? "saved" : ""}" data-save-recipient="${i}"
-          data-tip="${isSaved(r) ? "Saved on this computer" : "Save for next time"}"
-          aria-label="${isSaved(r) ? "Saved" : "Save"} ${esc(r)}">${ICON.bookmark}</button>
+          data-tip="${isSaved(r) ? "Saved on this computer - click to forget" : "Remember this company for next time"}"
+          aria-pressed="${isSaved(r)}" aria-label="Save ${esc(r)} for next time">${isSaved(r) ? `${ICON.tick}Saved` : "Save"}</button>
         <button class="remove" data-remove-recipient="${i}" aria-label="Remove ${esc(r)}">${ICON.x}</button>
       </li>`).join("")
     : `<li class="rempty">Each company you add gets its own marked copy.</li>`;
@@ -557,6 +579,12 @@ function renderPreview() {
   $("#previewLabel").textContent = `${doc.rel.split(/[\\/]/).pop()}  ·  ${state.previewDoc + 1} of ${docs.length}`;
   $("#prevPage").disabled = state.previewDoc === 0;
   $("#nextPage").disabled = state.previewDoc === docs.length - 1;
+
+  const who = state.recipients[state.previewRecipient];
+  $("#previewWho").innerHTML = who
+    ? `Previewing <b>${esc(who)}</b>'s copy${state.recipients.length > 1
+        ? `<span> · click another company to switch</span>` : ""}`
+    : "Previewing a sample - add a company to see their copy";
 
   const token = ++previewToken;
   const name = state.recipients[state.previewRecipient] || "Company name";
@@ -814,9 +842,13 @@ function renderTree(plan) {
 let planToken = 0;
 
 async function renderExport() {
-  $("#statPdfs").textContent = pdfCount();
-  $("#statRecipients").textContent = state.recipients.length;
-  $("#statFiles").textContent = pdfCount() * state.recipients.length;
+  const docs = pdfCount(), people = state.recipients.length, copies = docs * people;
+  $("#statPdfs").textContent = docs;
+  $("#statPdfsLabel").textContent = docs === 1 ? "document" : "documents";
+  $("#statRecipients").textContent = people;
+  $("#statRecipientsLabel").textContent = people === 1 ? "recipient" : "recipients";
+  $("#statFiles").textContent = copies;
+  $("#statFilesLabel").textContent = copies === 1 ? "copy to create" : "copies to create";
   $$(".choice[data-out]").forEach(b => b.classList.toggle("selected", b.dataset.out === state.out.mode));
   $("#outDirLabel").textContent = state.out.dir || "Choose a folder";
   const token = ++planToken;
@@ -1183,7 +1215,8 @@ $("#startOver").addEventListener("click", () => {
 
 window.addEventListener("error", e => api.log_js_error(`${e.message} @ ${e.filename}:${e.lineno}`));
 window.addEventListener("unhandledrejection", e => api.log_js_error(`promise: ${e.reason?.stack || e.reason}`));
-window.addEventListener("resize", () => { placeSpot(); placeHandle(); });
+window.addEventListener("resize", () => { placeSpot(); placeHandle(); updateScrollCue(); });
+$("#designControls").addEventListener("scroll", updateScrollCue, { passive: true });
 api.load_companies().then(list => {
   state.companies = list;
   // ?demo=files|design|export opens the browser-only mock with sample data,

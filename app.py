@@ -333,6 +333,50 @@ def _write_json(path: Path, data) -> None:
         log.warning("could not write %s", path)  # a convenience, never a reason to fail
 
 
+# The header strip at the top of the page (ui/styles.css, --chrome). The title
+# bar is painted the same colour so the two read as one band.
+CHROME_RGB = (0x0B, 0x0B, 0x0E)
+CAPTION_TEXT_RGB = (0xA1, 0xA1, 0xAA)
+
+
+def style_title_bar(window: webview.Window) -> None:
+    """
+    Paint the native Windows title bar to match the app, instead of the stock
+    grey one.
+
+    The real frame is kept on purpose. A frameless window would allow a fully
+    custom title bar, but pywebview drops the native frame entirely on Windows,
+    and with it edge resizing, Snap layouts and the standard caption buttons.
+    Recolouring keeps all of that and only changes how it looks.
+
+    The colour attributes need Windows 11; Windows 10 ignores them and still
+    gets the dark-mode title bar. Never fatal - the worst case is the stock look.
+    """
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        set_attr = ctypes.windll.dwmapi.DwmSetWindowAttribute
+        set_attr.argtypes = [wintypes.HWND, wintypes.DWORD, ctypes.c_void_p, wintypes.DWORD]
+
+        def attr(code: int, value: int) -> None:
+            set_attr(window.native.Handle.ToInt64(), code, ctypes.byref(ctypes.c_int(value)), 4)
+
+        def colorref(rgb: tuple[int, int, int]) -> int:
+            r, g, b = rgb
+            return r | g << 8 | b << 16  # Win32 COLORREF is 0x00BBGGRR
+
+        attr(20, 1)                            # DWMWA_USE_IMMERSIVE_DARK_MODE: light caption glyphs
+        attr(38, 1)                            # DWMWA_SYSTEMBACKDROP_TYPE: none, so no Mica tint
+        attr(35, colorref(CHROME_RGB))         # DWMWA_CAPTION_COLOR
+        attr(36, colorref(CAPTION_TEXT_RGB))   # DWMWA_TEXT_COLOR
+        attr(34, colorref(CHROME_RGB))         # DWMWA_BORDER_COLOR
+    except Exception:  # noqa: BLE001 - cosmetic only
+        log.warning("could not style the title bar", exc_info=True)
+
+
 def on_drop(api: Api, event: dict) -> None:
     """Files dropped on the window. Only Python can see their real paths."""
     files = event.get("dataTransfer", {}).get("files", [])
@@ -351,6 +395,7 @@ def main() -> None:
         width=1120, height=780, min_size=(820, 620), background_color="#09090b",
     )
     api._window = window
+    window.events.shown += lambda: style_title_bar(window)
 
     # Reading the installed fonts takes a moment the first time; do it while
     # the window opens, so the font list is ready when it is wanted.

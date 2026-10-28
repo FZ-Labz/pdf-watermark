@@ -8,38 +8,41 @@
 </head>
 <body>
 
-<!-- Soft pastel glows behind everything -->
+<!-- Two cool glows behind the card. Kept off green and amber, which mean
+     "ready" and "warning" elsewhere in the app. -->
 <div class="backdrop" aria-hidden="true">
   <span class="blob b1"></span>
   <span class="blob b2"></span>
-  <span class="blob b3"></span>
-  <span class="blob b4"></span>
 </div>
 
 <div class="app">
 
+  <!-- One dark band with the window's title bar, which app.py paints the same
+       colour. The app name already sits in the title bar, so it isn't repeated. -->
   <header class="topbar">
-    <div class="brand">
-      <div class="logo" aria-hidden="true">
-        <svg viewBox="0 0 32 32"><rect x="7" y="4" width="18" height="24" rx="3.5" fill="#fff" opacity=".95"/><path d="M9 22 23 10" stroke="url(#lg)" stroke-width="3.2" stroke-linecap="round"/><defs><linearGradient id="lg" x1="0" x2="1"><stop offset="0" stop-color="#2aa3ff"/><stop offset="1" stop-color="#8b7bff"/></linearGradient></defs></svg>
-      </div>
-      <span>PDF Watermark</span>
-    </div>
+    <div class="topbar-side"></div>
 
     <nav class="steps" id="steps" aria-label="Steps">
       <div class="spot" id="spot" aria-hidden="true"></div>
-      <button data-step="0"><span class="step-ic"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>Files</button>
-      <button data-step="1"><span class="step-ic"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg></span>Design</button>
-      <button data-step="2"><span class="step-ic"><svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14"/></svg></span>Export</button>
+      <button data-step="0"><span class="step-n">1</span>Files</button>
+      <button data-step="1"><span class="step-n">2</span>Design</button>
+      <button data-step="2"><span class="step-n">3</span>Export</button>
     </nav>
 
-    <div class="topbar-side"></div>
+    <div class="topbar-side topbar-actions">
+      <button class="bar-btn" id="showShortcuts" aria-label="Keyboard shortcuts" data-tip="Keyboard shortcuts" data-keys="?">
+        <svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h1M10.5 10h1M14.5 10h1M8 14h8"/></svg>
+      </button>
+      <button class="bar-btn" id="help" aria-label="Help - opens the guide in your browser" data-tip="Help">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.6M12 17h.01"/></svg>
+      </button>
+    </div>
   </header>
 
   <main class="card">
 
     <!-- 1 · FILES -->
-    <section class="view" data-view="0">
+    <section class="view view-files" data-view="0">
       <div class="view-head">
         <h1>Add your documents</h1>
         <p>Drop in PDFs or whole folders. Your originals are never changed.</p>
@@ -72,6 +75,11 @@
 
     <!-- 2 · DESIGN -->
     <section class="view view-design" data-view="1">
+      <div class="view-head design-head">
+        <h1>Design your watermark</h1>
+        <p>Say who each copy is for, then style the mark. The preview updates as you go.</p>
+      </div>
+
       <div class="design-controls" id="designControls">
 
         <div class="section">
@@ -83,14 +91,14 @@
             <button class="btn btn-light btn-sm" id="addRecipient">Add</button>
           </div>
           <div class="saved" id="saved" hidden>
-            <span class="hint-inline">Saved on this computer — click to add</span>
+            <span class="hint-inline">Saved companies — click one to add it</span>
             <div class="chips" id="savedChips"></div>
           </div>
           <ul class="rlist" id="recipients"></ul>
         </div>
 
         <div class="section">
-          <div class="section-title"><span id="formatLabel">Mark text</span></div>
+          <div class="section-title"><span id="formatLabel">Wording</span></div>
           <div class="select" id="formatSelect">
             <button type="button" class="select-trigger" id="formatTrigger"
                     aria-haspopup="listbox" aria-expanded="false" aria-labelledby="formatLabel formatTrigger">
@@ -122,7 +130,7 @@
         </div>
 
         <div class="section">
-          <div class="section-title"><span>Text</span></div>
+          <div class="section-title"><span>Font &amp; style</span></div>
           <div class="toolbar" role="toolbar" aria-label="Text style">
             <div class="font-picker" id="fontPicker">
               <button type="button" class="font-trigger" id="fontTrigger" aria-haspopup="listbox" aria-expanded="false"
@@ -139,14 +147,14 @@
               </div>
             </div>
             <span class="tb-sep"></span>
-            <button type="button" class="tb-btn" id="boldBtn" aria-pressed="true" data-tip="Bold" data-keys="mod+B"><b>B</b></button>
-            <button type="button" class="tb-btn" id="italicBtn" aria-pressed="false" data-tip="Italic" data-keys="mod+I"><i class="serif-i">I</i></button>
-            <button type="button" class="tb-btn" id="outlineBtn" aria-pressed="false" data-tip="Outline letters" data-keys="mod+shift+L">
+            <button type="button" class="tb-btn" id="boldBtn" aria-label="Bold" aria-pressed="true" data-tip="Bold" data-keys="mod+B"><b>B</b></button>
+            <button type="button" class="tb-btn" id="italicBtn" aria-label="Italic" aria-pressed="false" data-tip="Italic" data-keys="mod+I"><i class="serif-i">I</i></button>
+            <button type="button" class="tb-btn" id="outlineBtn" aria-label="Outline letters" aria-pressed="false" data-tip="Outline letters" data-keys="mod+shift+L">
               <svg viewBox="0 0 24 24"><path d="M5 20 11 4h2l6 16M8 14h8" class="outline-a"/></svg>
             </button>
             <span class="tb-sep"></span>
             <div class="color-picker" id="colorPicker">
-              <button type="button" class="tb-btn" id="colorBtn" aria-haspopup="true" aria-expanded="false" data-tip="Colour">
+              <button type="button" class="tb-btn" id="colorBtn" aria-label="Colour" aria-haspopup="true" aria-expanded="false" data-tip="Colour">
                 <span class="color-dot" id="colorDot"></span>
               </button>
               <div class="color-pop" id="colorPop" hidden>
@@ -216,6 +224,7 @@
       </div>
 
       <div class="preview-pane">
+        <p class="preview-who" id="previewWho"></p>
         <div class="preview-stage" id="previewStage">
           <canvas id="previewCanvas" width="595" height="842"></canvas>
           <img id="previewImg" alt="Preview of the watermarked page" hidden>
@@ -238,10 +247,13 @@
           <p>Check the summary, then create your copies.</p>
         </div>
 
-        <div class="stats">
-          <div class="stat" style="--tint:#8fb4ff"><span id="statPdfs">0</span><small>Documents</small></div>
-          <div class="stat" style="--tint:#c4a8ff"><span id="statRecipients">0</span><small>Recipients</small></div>
-          <div class="stat" style="--tint:#8fe3c8"><span id="statFiles">0</span><small>Copies to create</small></div>
+        <!-- Documents x recipients = copies: the equation explains the total. -->
+        <div class="tally" aria-label="Summary">
+          <div class="tally-item"><span id="statPdfs">0</span><small id="statPdfsLabel">documents</small></div>
+          <span class="tally-op" aria-hidden="true">&times;</span>
+          <div class="tally-item"><span id="statRecipients">0</span><small id="statRecipientsLabel">recipients</small></div>
+          <span class="tally-op" aria-hidden="true">=</span>
+          <div class="tally-item total"><span id="statFiles">0</span><small id="statFilesLabel">copies to create</small></div>
         </div>
 
         <span class="field-label">Save to</span>
@@ -297,12 +309,8 @@
     </div>
 
     <footer class="card-foot">
-      <div class="row gap-md">
-        <button class="link" id="help">Need help?<svg viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></svg></button>
-        <button class="link" id="showShortcuts" data-tip="Keyboard shortcuts" data-keys="?">
-          <svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h1M10.5 10h1M14.5 10h1M8 14h8"/></svg>Shortcuts
-        </button>
-      </div>
+      <!-- Says why Continue is unavailable, so a greyed-out button is never a dead end. -->
+      <p class="foot-hint" id="nextHint" aria-live="polite"></p>
       <div class="row gap-sm">
         <button class="btn btn-dark" id="back">Back</button>
         <button class="btn btn-light" id="next">Continue</button>
