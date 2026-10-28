@@ -8,13 +8,6 @@
 </head>
 <body>
 
-<!-- Two cool glows behind the card. Kept off green and amber, which mean
-     "ready" and "warning" elsewhere in the app. -->
-<div class="backdrop" aria-hidden="true">
-  <span class="blob b1"></span>
-  <span class="blob b2"></span>
-</div>
-
 <div class="app">
 
   <!-- One dark band with the window's title bar, which app.py paints the same
@@ -24,9 +17,9 @@
 
     <nav class="steps" id="steps" aria-label="Steps">
       <div class="spot" id="spot" aria-hidden="true"></div>
-      <button data-step="0"><span class="step-n">1</span>Files</button>
-      <button data-step="1"><span class="step-n">2</span>Design</button>
-      <button data-step="2"><span class="step-n">3</span>Export</button>
+      <button data-step="0"><span class="step-n">01</span>Files</button>
+      <button data-step="1"><span class="step-n">02</span>Design</button>
+      <button data-step="2"><span class="step-n">03</span>Export</button>
     </nav>
 
     <div class="topbar-side topbar-actions">
@@ -50,7 +43,7 @@
 
       <div class="dropzone" id="dropzone">
         <div class="folder-tile" aria-hidden="true">
-          <svg viewBox="0 0 48 40"><path d="M4 8a4 4 0 0 1 4-4h10l4 4h18a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z" fill="url(#fg)"/><path d="M4 14h40v18a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z" fill="url(#fg2)"/><path d="m24 18 1.6 3.4L29 23l-3.4 1.6L24 28l-1.6-3.4L19 23l3.4-1.6z" fill="#2b2b30"/><defs><linearGradient id="fg" y2="1" x2="0"><stop offset="0" stop-color="#9a9aa3"/><stop offset="1" stop-color="#6d6d76"/></linearGradient><linearGradient id="fg2" y2="1" x2="0"><stop offset="0" stop-color="#c9c9d0"/><stop offset="1" stop-color="#8c8c95"/></linearGradient></defs></svg>
+          <svg viewBox="0 0 32 32"><path d="M4 9.5V25h24V11.5H15L12.5 8H4z"/><path d="M16 15v6M13 18h6"/></svg>
         </div>
         <h2>Drag and drop PDFs or folders here</h2>
         <p>Subfolders are included. Anything that isn't a PDF is skipped.</p>

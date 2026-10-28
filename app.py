@@ -331,10 +331,11 @@ def _write_json(path: Path, data) -> None:
         log.warning("could not write %s", path)  # a convenience, never a reason to fail
 
 
-# The header strip at the top of the page (ui/styles.css, --chrome). The title
-# bar is painted the same colour so the two read as one band.
-CHROME_RGB = (0x0B, 0x0B, 0x0E)
-CAPTION_TEXT_RGB = (0xA1, 0xA1, 0xAA)
+# The header strip at the top of the page (ui/styles.css, --chrome) is Black,
+# and the title bar is painted to match so the two read as one band. Caption
+# text is the brand's Greige.
+CHROME_RGB = (0x00, 0x00, 0x00)
+CAPTION_TEXT_RGB = (0xD7, 0xD6, 0xCC)
 
 
 def style_title_bar(window: webview.Window) -> None:
@@ -438,7 +439,7 @@ def main() -> None:
     width, height = initial_size()
     window = webview.create_window(
         APP_NAME, str(resource("ui/index.html")), js_api=api,
-        width=width, height=height, min_size=MIN_SIZE, background_color="#09090b",
+        width=width, height=height, min_size=MIN_SIZE, background_color="#0A2435",
     )
     api._window = window
     window.events.shown += lambda: style_title_bar(window)
