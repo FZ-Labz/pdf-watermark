@@ -592,16 +592,16 @@ function renderPreview() {
   // Debounced, so dragging a slider does not queue up a render per pixel.
   clearTimeout(previewTimer);
   previewTimer = setTimeout(async () => {
-    const result = await api.preview({ ...settings(), text, source: doc.source.path, rel: doc.rel, page: 0, want_box: true });
+    const result = await api.preview({ ...settings(), text, source: doc.source.path, rel: doc.rel, page: 0 });
     if (token !== previewToken) return;
-    const png = result && (result.png || result);
-    $("#previewImg").hidden = !png;
-    $("#previewCanvas").hidden = !!png;
-    if (png) {
+    const image = result && result.image;
+    $("#previewImg").hidden = !image;
+    $("#previewCanvas").hidden = !!image;
+    if (image) {
       stampBox = result.box || null;
       const img = $("#previewImg");
       img.onload = placeHandle;
-      img.src = png;
+      img.src = image;
     } else if (inApp()) {
       stampBox = null;
       drawUnavailable();

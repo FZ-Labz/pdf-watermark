@@ -267,6 +267,84 @@ def test_preview_returns_png(tmp_path):
     assert pymupdf.open(src)[0].rotation == 90
 
 
+def _full_render(src, style, max_px):
+    """The preview as it used to be made: watermark the real page, then render it."""
+    doc = pymupdf.open(src)
+    text = wm.expand_text(style.text, 1, doc.page_count, src.stem)
+    page = wm.watermark_page(doc[0], style, text, wm.style_font(style, text))
+    zoom = max_px / max(page.rect.width, page.rect.height)
+    pix = page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom), alpha=False)
+    doc.close()
+    return pix
+
+
+def _mark_stats(pix):
+    """Pixel count, centroid and bounding box of the red watermark in a render."""
+    n, data, xs, ys = pix.n, pix.samples, [], []
+    for y in range(pix.height):
+        row = y * pix.stride
+        for x in range(pix.width):
+            r, g = data[row + x * n], data[row + x * n + 1]
+            if r - g > 60:      # red ink, faded or not; the page's own content is blue and black
+                xs.append(x)
+                ys.append(y)
+    if not xs:
+        return 0, None, None
+    return len(xs), (sum(xs) / len(xs), sum(ys) / len(ys)), (min(xs), min(ys), max(xs), max(ys))
+
+
+@pytest.mark.parametrize("case", ["plain", "rot90", "rot180", "rot270", "cropped", "offset", "stamp", "tile"])
+def test_cached_preview_matches_a_full_render(tmp_path, case):
+    """
+    The preview draws the watermark over a cached image of the page instead of
+    over the page itself. It must look the same as watermarking the real page,
+    including on the rotated and cropped pages that the page normalisation
+    exists for.
+    """
+    doc = pymupdf.open()
+    make_page(doc, rotation={"rot90": 90, "rot180": 180, "rot270": 270}.get(case, 0),
+              crop=(50, 80, 500, 760) if case == "cropped" else None,
+              origin=(120, 60) if case == "offset" else (0, 0))
+    src = save(doc, tmp_path / f"{case}.pdf")
+    layout = {"stamp": "position", "tile": "tile"}.get(case, "diagonal")
+    style = wm.Style(text="CONFIDENTIAL - Acme", layout=layout, color=(0.85, 0.2, 0.2), opacity=0.6)
+
+    expected = _full_render(src, style, 400)
+    image = wm.render_preview(src, style, max_px=400)
+    actual = pymupdf.Pixmap(image)
+
+    assert (actual.width, actual.height) == (expected.width, expected.height)
+    # Usually pixel-identical. Where the crop box starts mid-pixel, the edges
+    # of the letters can shade differently by a fraction of a pixel - so what
+    # is compared is where the watermark is and how big, not every pixel.
+    count, centre, box = _mark_stats(actual)
+    want_count, want_centre, want_box = _mark_stats(expected)
+    assert want_count > 0
+    assert abs(count - want_count) <= 0.03 * want_count, f"{case}: {count} vs {want_count} marked pixels"
+    assert abs(centre[0] - want_centre[0]) <= 1 and abs(centre[1] - want_centre[1]) <= 1, f"{case}: centre moved"
+    assert all(abs(a - b) <= 1 for a, b in zip(box, want_box, strict=True)), f"{case}: extent {box} vs {want_box}"
+
+
+def test_preview_cache_notices_an_edited_file(tmp_path):
+    doc = pymupdf.open()
+    make_page(doc, label="First version")
+    src = save(doc, tmp_path / "in.pdf")
+    first = wm.render_preview(src, wm.Style(text="X"), max_px=300)
+
+    doc = pymupdf.open()
+    make_page(doc, size=(A4[1], A4[0]), label="Second version")   # now landscape
+    save(doc, src)
+    second = pymupdf.Pixmap(wm.render_preview(src, wm.Style(text="X"), max_px=300))
+    assert pymupdf.Pixmap(first).height != second.height, "served the stale page"
+
+
+def test_preview_can_be_jpeg(tmp_path):
+    doc = pymupdf.open()
+    make_page(doc)
+    src = save(doc, tmp_path / "in.pdf")
+    assert wm.render_preview(src, wm.Style(text="X"), max_px=200, fmt="jpeg")[:3] == b"\xff\xd8\xff"
+
+
 @pytest.mark.parametrize("value,expected", [
     ("red", (0xd9 / 255, 0x33 / 255, 0x33 / 255)),
     ("#000", (0, 0, 0)),

@@ -24,7 +24,6 @@ import os
 import subprocess
 import sys
 import threading
-import webbrowser
 from pathlib import Path
 
 import webview
@@ -121,17 +120,10 @@ def describe(raw: str) -> dict | None:
             "files": files, "problems": problems}
 
 
-# The current UI's font buttons, until the Design step's font picker lands.
-FONT_BUTTONS = {"sans": ("Helvetica", False), "bold": ("Helvetica", True),
-                "serif": ("Times", True), "mono": ("Courier", True)}
-
-
 def style_from(settings: dict, text: str) -> wm.Style:
     angle = settings.get("angle")
     font = settings.get("font") or wm.FONT_FAMILY
     bold = settings.get("bold", wm.BOLD)
-    if font in FONT_BUTTONS:
-        font, bold = FONT_BUTTONS[font]
     position = settings.get("position") or wm.POSITION
     return wm.Style(
         text=text,
@@ -218,20 +210,24 @@ class Api:
             groups.append({"text": text, "files": files})
         return groups
 
-    def preview(self, settings: dict) -> str | None:
+    def preview(self, settings: dict) -> dict | None:
+        """
+        The preview image, plus where a positioned stamp landed (for the drag
+        handle) - or None if the file can't be shown.
+
+        JPEG rather than PNG: twice as fast to encode and half the size to pass
+        through to the page, and at quality 90 a preview can't tell.
+        """
         source = Path(settings["source"])
         path = source / settings["rel"] if source.is_dir() else source
         try:
-            png, box = wm.render_preview(path, style_from(settings, settings["text"]),
-                                         page_index=int(settings.get("page", 0)), max_px=1000,
-                                         with_box=True)
+            image, box = wm.render_preview(path, style_from(settings, settings["text"]),
+                                           page_index=int(settings.get("page", 0)), max_px=1000,
+                                           with_box=True, fmt="jpeg")
         except Exception:  # noqa: BLE001 - an unreadable file just shows no preview
             log.warning("preview failed for %s", path, exc_info=True)
             return None
-        url = "data:image/png;base64," + base64.b64encode(png).decode()
-        # The current UI expects just the image; box (where a positioned stamp
-        # landed) is for the drag handle in the Design step.
-        return {"png": url, "box": box} if settings.get("want_box") else url
+        return {"image": "data:image/jpeg;base64," + base64.b64encode(image).decode(), "box": box}
 
     def list_fonts(self) -> list[dict]:
         """Built-in and installed font families, for the font picker."""
@@ -294,6 +290,8 @@ class Api:
             open_in_file_manager(path)
 
     def open_help(self) -> None:
+        import webbrowser  # only needed here, and slow to import at startup
+
         webbrowser.open(HELP_URL)
 
     def load_settings(self) -> dict:
@@ -385,14 +383,62 @@ def on_drop(api: Api, event: dict) -> None:
         api._call("addSources", api.inspect(paths))
 
 
+WINDOW_SIZE = (1120, 780)
+MIN_SIZE = (820, 620)
+
+
+def initial_size() -> tuple[int, int]:
+    """
+    The opening window size, shrunk to fit the screen.
+
+    1120 x 780 is bigger than a laptop screen at 150% display scaling, which
+    opened the window with its bottom - and the Continue button - under the
+    taskbar. Sizes are in logical pixels, as pywebview takes them.
+    """
+    width, height = WINDOW_SIZE
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            from ctypes import wintypes
+
+            area = wintypes.RECT()
+            ctypes.windll.user32.SystemParametersInfoW(0x30, 0, ctypes.byref(area), 0)  # SPI_GETWORKAREA
+            scale = ctypes.windll.user32.GetDpiForSystem() / 96
+            width = min(width, int((area.right - area.left) / scale * 0.92))
+            height = min(height, int((area.bottom - area.top) / scale * 0.92))
+        except Exception:  # noqa: BLE001 - the default size is a fine fallback
+            log.warning("could not read the screen size", exc_info=True)
+    return max(width, MIN_SIZE[0]), max(height, MIN_SIZE[1])
+
+
+def use_software_rendering() -> None:
+    """
+    Draw the interface without the GPU.
+
+    WebView2's GPU process held ~180 MB to composite what is a mostly still
+    form; drawing in software takes the whole app from ~370 MB to ~260 MB of
+    private memory. It also sidesteps the blank-window glitches WebView2 can
+    hit on virtual machines, remote desktops and old graphics drivers.
+    Start with --gpu to put GPU drawing back.
+    """
+    if "--gpu" in sys.argv:
+        return
+    key = "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"
+    current = os.environ.get(key, "")
+    if "--disable-gpu" not in current:
+        os.environ[key] = f"{current} --disable-gpu".strip()
+
+
 def main() -> None:
     start_logging()
     log.info("start %s", sys.argv[1:])
+    use_software_rendering()
     initial = [a for a in sys.argv[1:] if not a.startswith("-")]
     api = Api(initial)
+    width, height = initial_size()
     window = webview.create_window(
         APP_NAME, str(resource("ui/index.html")), js_api=api,
-        width=1120, height=780, min_size=(820, 620), background_color="#09090b",
+        width=width, height=height, min_size=MIN_SIZE, background_color="#09090b",
     )
     api._window = window
     window.events.shown += lambda: style_title_bar(window)

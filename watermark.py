@@ -43,6 +43,8 @@ import os
 import re
 import secrets
 import sys
+import threading
+from collections import OrderedDict
 from dataclasses import dataclass, field
 from math import cos, hypot, radians, sin
 from pathlib import Path
@@ -765,37 +767,91 @@ def check_pdf(path: Path | str) -> str | None:
         doc.close()
 
 
+# ---- Preview --------------------------------------------------------------
+#
+# Moving a slider in the app re-renders the preview. Only the watermark has
+# changed, but a full render redraws the whole page - and on a dense CAD sheet
+# that is most of the time (a 40,000-stroke A0 drawing: ~320 ms of a ~500 ms
+# preview). So each page is rasterised once, kept as a one-page PDF holding
+# just that image, and every later preview draws the watermark over the image.
+# The result matches a full render to within a shade of anti-aliasing.
+
+_PREVIEW_CACHE_SIZE = 6        # pages; each entry is the compressed page image
+_backgrounds: OrderedDict[tuple, tuple[bytes, int, int]] = OrderedDict()
+_backgrounds_lock = threading.Lock()   # previews arrive on the app's API threads
+
+
+def _preview_background(source: Path, page_index: int, max_px: int,
+                        password: str | None) -> tuple[bytes, int, int]:
+    """
+    (one-page PDF holding the rendered page as an image, page index used,
+    page count). Cached by file identity, so an edited file is re-read.
+    """
+    stat = os.stat(long_path(source))
+    key = (str(source.resolve()), stat.st_mtime_ns, stat.st_size, page_index, max_px)
+    with _backgrounds_lock:
+        if key in _backgrounds:
+            _backgrounds.move_to_end(key)
+            return _backgrounds[key]
+
+    doc = pymupdf.open(long_path(source))
+    try:
+        if doc.needs_pass and not (password and doc.authenticate(password)):
+            raise WatermarkError("password-protected")
+        index = max(0, min(page_index, doc.page_count - 1))
+        page = doc[index]
+        # page.rect is the page as displayed - rotation already applied - so
+        # the image comes out the way round the watermark will be drawn.
+        zoom = max_px / max(page.rect.width, page.rect.height)
+        pix = page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom), alpha=False)
+        holder = pymupdf.open()
+        holder.new_page(width=page.rect.width, height=page.rect.height).insert_image(
+            pymupdf.Rect(0, 0, page.rect.width, page.rect.height), pixmap=pix)
+        entry = (holder.tobytes(), index, doc.page_count)
+        holder.close()
+    finally:
+        doc.close()
+
+    with _backgrounds_lock:
+        _backgrounds[key] = entry
+        while len(_backgrounds) > _PREVIEW_CACHE_SIZE:
+            _backgrounds.popitem(last=False)
+    return entry
+
+
 def render_preview(source: Path | str, style: Style | None = None, page_index: int = 0,
                    max_px: int = 900, password: str | None = None,
-                   with_box: bool = False) -> bytes | tuple[bytes, dict | None]:
+                   with_box: bool = False, fmt: str = "png") -> bytes | tuple[bytes, dict | None]:
     """
-    PNG bytes of one page with the watermark applied, for on-screen preview.
+    Image bytes of one page with the watermark applied, for on-screen preview.
     Nothing is written to disk.
+
+    fmt is "png" or "jpeg". JPEG encodes about twice as fast and is half the
+    size to pass to the interface, at a quality where a preview can't tell.
 
     With with_box, also returns where a positioned stamp landed, as fractions
     of the page: {"x0", "y0", "x1", "y1", "mx", "my"} (mx/my being the margin)
     - or None for the other layouts.
     """
     source = Path(source)
-    doc = pymupdf.open(long_path(source))
+    background, index, page_count = _preview_background(source, page_index, max_px, password)
+    doc = pymupdf.open(stream=background, filetype="pdf")
     try:
-        if doc.needs_pass and not (password and doc.authenticate(password)):
-            raise WatermarkError("password-protected")
         style = style or Style()
-        index = max(0, min(page_index, doc.page_count - 1))
-        text = expand_text(style.text, index + 1, doc.page_count, source.stem)
+        text = expand_text(style.text, index + 1, page_count, source.stem)
         font = style_font(style, text)
-        page = watermark_page(doc[index], style, text, font)
+        page = watermark_page(doc[0], style, text, font)
         zoom = max_px / max(page.rect.width, page.rect.height)
-        png = page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom), alpha=False).tobytes("png")
+        pix = page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom), alpha=False)
+        image = pix.tobytes("jpg", jpg_quality=90) if fmt == "jpeg" else pix.tobytes("png")
         if not with_box:
-            return png
+            return image
         box = layout_page(page, style, text, font)["box"]
         if box is None:
-            return png, None
+            return image, None
         W, H, m = page.rect.width, page.rect.height, stamp_margin(page)
-        return png, {"x0": box.x0 / W, "y0": box.y0 / H, "x1": box.x1 / W, "y1": box.y1 / H,
-                     "mx": m / W, "my": m / H}
+        return image, {"x0": box.x0 / W, "y0": box.y0 / H, "x1": box.x1 / W, "y1": box.y1 / H,
+                       "mx": m / W, "my": m / H}
     finally:
         doc.close()
 
