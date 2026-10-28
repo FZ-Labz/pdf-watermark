@@ -53,6 +53,72 @@ def test_watermark_is_centred_on_a_cropped_rotated_page(red_style):
     assert (cx, cy) == pytest.approx((0.5, 0.5), abs=0.04)
 
 
+@pytest.mark.parametrize("rotation", [0, 90, 180, 270])
+@pytest.mark.parametrize("crop", [
+    (10, 10, 585, 400),      # the lower half - the watermark used to land off the page
+    (10, 450, 585, 832),     # the upper half
+    (200, 300, 560, 800),    # an off-centre window
+    (50, 80, 500, 760),      # nearly centred - used to be 2pt off
+])
+def test_watermark_is_centred_on_any_cropped_page(tmp_path, red_style, rotation, crop):
+    """
+    The watermark must be centred in what a viewer shows - the crop box -
+    wherever that box sits on the page. Checked on the saved copy, since that
+    is what goes out.
+
+    Regression: PyMuPDF's TextWriter offsets text by the crop box's distance
+    from the top of the page, but PDF y runs from the bottom, so any crop that
+    isn't vertically centred moved the watermark - right off the page for a
+    crop on the lower half, while the run still reported success.
+    """
+    doc = pymupdf.open()
+    make_page(doc, rotation=rotation, crop=crop)
+    src = save(doc, tmp_path / "in.pdf")
+    out = tmp_path / "out.pdf"
+    wm.watermark_file(src, out, red_style)
+
+    copy = pymupdf.open(out)
+    cx, cy, count = red_centroid(copy[0])
+    assert count > 50, "watermark not visible on the page"
+    assert (cx, cy) == pytest.approx((0.5, 0.5), abs=0.04)
+    copy.close()
+
+
+@pytest.mark.parametrize("rotation", [0, 90])
+def test_watermark_is_centred_on_an_offset_page_with_an_off_centre_crop(tmp_path, red_style, rotation):
+    """A MediaBox that doesn't start at (0, 0), as some generators write, plus a crop."""
+    ox, oy = 120, 60
+    doc = pymupdf.open()
+    make_page(doc, rotation=rotation, origin=(ox, oy), crop=(ox + 200, oy + 300, ox + 560, oy + 800))
+    src = save(doc, tmp_path / "in.pdf")
+    out = tmp_path / "out.pdf"
+    wm.watermark_file(src, out, red_style)
+    copy = pymupdf.open(out)
+    cx, cy, count = red_centroid(copy[0])
+    assert count > 50
+    assert (cx, cy) == pytest.approx((0.5, 0.5), abs=0.04)
+    copy.close()
+
+
+def test_cropped_away_content_stays_hidden(tmp_path, red_style):
+    """Fixing the crop handling must not reveal what the author cropped away."""
+    doc = pymupdf.open()
+    page = doc.new_page(width=A4[0], height=A4[1])
+    page.insert_text((60, 120), "HIDDEN ABOVE THE CROP", fontsize=20)
+    page.insert_text((60, 700), "Visible text", fontsize=20)
+    doc.xref_set_key(page.xref, "CropBox", "[0 0 595 400]")   # keep only the lower part
+    src = save(doc, tmp_path / "in.pdf")
+    out = tmp_path / "out.pdf"
+    wm.watermark_file(src, out, red_style)
+
+    copy = pymupdf.open(out)
+    shown = copy[0].get_text(clip=copy[0].rect)
+    assert "Visible text" in shown
+    assert "HIDDEN" not in shown
+    assert copy[0].rect.height == pytest.approx(400)
+    copy.close()
+
+
 def test_unbalanced_transform_in_content_stream_is_contained(red_style):
     """CAD-style PDFs leave a bare `cm` open; the watermark must not inherit it."""
     doc = pymupdf.open()

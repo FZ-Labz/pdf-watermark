@@ -384,7 +384,46 @@ def _box(value: str | None) -> tuple[float, float, float, float] | None:
     return min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1)
 
 
-def _normalise_page(page: pymupdf.Page) -> None:
+def _crop_media_to_visible(doc: pymupdf.Document, xref: int) -> bool:
+    """
+    Make the MediaBox the visible area (MediaBox and CropBox overlap), if it
+    isn't already. Returns True if the page boxes changed.
+
+    Why: PyMuPDF's TextWriter (1.27 at least) shifts text by the crop box's
+    distance from the *top* of the page, but PDF coordinates run from the
+    *bottom*. The two only agree when the crop box sits vertically centred,
+    so on any other cropped page the watermark drifted - and with a crop on
+    the lower half of the sheet it landed off the visible page entirely,
+    while the run reported success. With MediaBox equal to CropBox the two
+    agree whatever PyMuPDF does, so this stays correct if it is ever fixed.
+
+    The copy looks the same: viewers only ever show MediaBox and CropBox's
+    overlap, and that is exactly what MediaBox becomes. Anything the author
+    cropped away stays outside the page, still hidden.
+    """
+    media = _box(_inherited(doc, xref, "MediaBox"))
+    crop = _box(_inherited(doc, xref, "CropBox"))
+    if media is None or crop is None:
+        return False
+    x0, y0 = max(media[0], crop[0]), max(media[1], crop[1])
+    x1, y1 = min(media[2], crop[2]), min(media[3], crop[3])
+    if x1 <= x0 or y1 <= y0 or (x0, y0, x1, y1) == media:
+        return False   # nothing visible to keep, or already aligned
+
+    visible = f"[{x0:g} {y0:g} {x1:g} {y1:g}]"
+    doc.xref_set_key(xref, "MediaBox", visible)
+    doc.xref_set_key(xref, "CropBox", visible)
+    # The PDF spec requires every other box to sit inside the MediaBox.
+    for key in ("TrimBox", "BleedBox", "ArtBox"):
+        box = _box(doc.xref_get_key(xref, key)[1])
+        if box is not None:
+            bx0, by0 = min(max(box[0], x0), x1), min(max(box[1], y0), y1)
+            bx1, by1 = max(min(box[2], x1), x0), max(min(box[3], y1), y0)
+            doc.xref_set_key(xref, key, f"[{bx0:g} {by0:g} {bx1:g} {by1:g}]")
+    return True
+
+
+def _normalise_page(page: pymupdf.Page) -> bool:
     """
     Bring the page to a clean, rotation-free state before watermarking.
 
@@ -409,20 +448,25 @@ def _normalise_page(page: pymupdf.Page) -> None:
     The page boxes matter: the crop box decides what a viewer shows. Dropping
     it would reveal whatever the author had cropped away - in a copy that is
     about to be sent to someone outside.
+
+    3. A crop box that isn't vertically centred - see _crop_media_to_visible.
+
+    Returns True if the page's geometry changed, in which case PyMuPDF needs
+    a fresh page object (doc.reload_page) before anything is drawn.
     """
     rotation = page.rotation % 360
+    doc, xref = page.parent, page.xref
 
     if rotation not in (90, 180, 270):
         if not page.is_wrapped:
             page.wrap_contents()
-        return
+        return _crop_media_to_visible(doc, xref)
 
-    doc, xref = page.parent, page.xref
     media = _box(_inherited(doc, xref, "MediaBox"))
     if media is None:
         if not page.is_wrapped:
             page.wrap_contents()
-        return
+        return _crop_media_to_visible(doc, xref)
     x0, y0, x1, y1 = media
 
     # Compensating matrix [a b c d e f] in PDF space (y up). It maps the
@@ -466,6 +510,8 @@ def _normalise_page(page: pymupdf.Page) -> None:
             bx1, by1 = min(bx1, nw), min(by1, nh)
             doc.xref_set_key(xref, key, f"[{bx0:g} {by0:g} {bx1:g} {by1:g}]")
     doc.xref_set_key(xref, "Rotate", "0")
+    _crop_media_to_visible(doc, xref)
+    return True
 
 
 # ---- Drawing --------------------------------------------------------------
@@ -561,9 +607,7 @@ def watermark_page(page: pymupdf.Page, style: Style | None = None,
     if not text.strip():
         return page
 
-    rotated = page.rotation % 360 != 0
-    _normalise_page(page)
-    if rotated:
+    if _normalise_page(page):
         page = page.parent.reload_page(page)
 
     plan = layout_page(page, style, text, font)
