@@ -195,14 +195,15 @@ def test_file_keeps_pages_sizes_bookmarks_and_links(tmp_path):
     doc.set_toc([[1, "Intro", 1], [2, "Drawings", 2], [1, "End", 3]])
     doc[0].insert_link({"kind": pymupdf.LINK_URI, "from": pymupdf.Rect(40, 40, 200, 70),
                         "uri": "https://example.com"})
-    sizes = [(p.rect.width, p.rect.height) for p in doc]
+    # Flat, because pytest.approx doesn't compare nested sequences.
+    sizes = [x for p in doc for x in (p.rect.width, p.rect.height)]
     src = save(doc, tmp_path / "in.pdf")
 
     pages = wm.watermark_file(src, tmp_path / "out.pdf", wm.Style(text="X"))
 
     out = pymupdf.open(tmp_path / "out.pdf")
     assert pages == 3 == out.page_count
-    assert [(p.rect.width, p.rect.height) for p in out] == pytest.approx(sizes)
+    assert [x for p in out for x in (p.rect.width, p.rect.height)] == pytest.approx(sizes)
     assert out.get_toc() == [[1, "Intro", 1], [2, "Drawings", 2], [1, "End", 3]]
     assert out[0].get_links()[0]["uri"] == "https://example.com"
     assert not [p for p in tmp_path.iterdir() if p.suffix == ".tmp"]
