@@ -133,3 +133,17 @@ def test_cli_position_and_font_flags(pack, tmp_path):
     assert result.returncode == 2 and b"between 0 and 1" in result.stderr
     result = run_cli(str(pack), "--text", "X", "--font", "Definitely Not A Font", cwd=tmp_path)
     assert result.returncode == 2 and b"no font called" in result.stderr
+
+
+def test_companies_whose_names_slug_alike_never_share_an_output(tmp_path):
+    """'A/B' and 'A:B' both slug to 'A-B'; one must not overwrite the other."""
+    docs = tmp_path / "Docs"
+    pdf(docs / "x.pdf")
+    single = pdf(tmp_path / "report.pdf")
+    folder_pdfs = {docs: bw.find_pdfs(docs, bw.FOLDER_SUFFIX)}
+    taken: set[str] = set()
+    jobs = [job for text in ("CONFIDENTIAL - A/B", "CONFIDENTIAL - A:B")
+            for job in bw.build_jobs(text, folder_pdfs, [single], None, bw.FOLDER_SUFFIX,
+                                     True, taken=taken)]
+    destinations = [str(j[1]).casefold() for j in jobs]
+    assert len(destinations) == len(set(destinations)) == 4

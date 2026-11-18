@@ -191,8 +191,9 @@ class Api:
         skip = {Path(p).resolve() for p in settings.get("skip", [])}
         folder_pdfs = {f: [p for p in pdfs if p not in skip] for f, pdfs in folder_pdfs.items()}
         files = [f for f in files if f not in skip]
+        taken: set[str] = set()   # shared, so two companies never write to the same file
         return [(text, bw.build_jobs(text, folder_pdfs, files, out_dir, bw.FOLDER_SUFFIX,
-                                     tag_filenames=len(texts) > 1))
+                                     tag_filenames=len(texts) > 1, taken=taken))
                 for text in texts]
 
     def plan(self, settings: dict) -> list[dict]:

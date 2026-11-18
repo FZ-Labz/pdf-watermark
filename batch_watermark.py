@@ -229,7 +229,8 @@ def count_ignored(folder: Path, folder_suffix: str) -> int:
 
 def build_jobs(text: str, folder_pdfs: dict[Path, list[Path]], files: list[Path],
                out_dir: Path | None, folder_suffix: str,
-               tag_filenames: bool) -> list[tuple[Path, Path, str]]:
+               tag_filenames: bool,
+               taken: set[str] | None = None) -> list[tuple[Path, Path, str]]:
     """
     Work out every (source, destination, display name) for one watermark text.
 
@@ -240,6 +241,11 @@ def build_jobs(text: str, folder_pdfs: dict[Path, list[Path]], files: list[Path]
     `tag_filenames` adds the watermark text to single-file output names. It is
     only switched on when several texts are being applied, so the common case
     of one watermark stays clean: report.pdf -> report_watermarked.pdf.
+
+    `taken` is the set of output paths already claimed. Pass the same set for
+    every text in a run: two texts can slug to the same name ("A/B" and "A:B"
+    both become "A-B", and long names are cut to 80 characters), and without
+    a shared set one company's copies would overwrite another's.
     """
     slug = slugify(text)
     jobs: list[tuple[Path, Path, str]] = []
@@ -247,7 +253,7 @@ def build_jobs(text: str, folder_pdfs: dict[Path, list[Path]], files: list[Path]
     # Two sources can map to the same output: two folders that are both called
     # "Docs", or two files called "report.pdf", once --out sends everything to
     # one place. Without this the second would silently overwrite the first.
-    taken: set[str] = set()
+    taken = set() if taken is None else taken
 
     def unique(path: Path, numbered) -> Path:
         n = 1
@@ -505,6 +511,7 @@ def main() -> None:
     succeeded = 0
     failed = 0
 
+    taken: set[str] = set()   # shared, so no two texts can write to the same file
     for text in args.texts:
         style = wm.Style(text=text, font=args.font, bold=args.bold, italic=args.italic,
                          color=args.rgb, opacity=args.opacity, angle=args.angle,
@@ -513,7 +520,7 @@ def main() -> None:
                          tile=args.tile if args.tile and args.tile > 1 else wm.REPEAT_LINES,
                          size=args.size / 100, outline=args.outline)
         jobs = build_jobs(text, folder_pdfs, files, out_dir,
-                          args.suffix, tag_filenames=len(args.texts) > 1)
+                          args.suffix, tag_filenames=len(args.texts) > 1, taken=taken)
 
         print(f'["{text}"]')
         # Show each distinct destination folder once, rather than repeating a
