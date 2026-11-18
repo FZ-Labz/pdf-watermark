@@ -331,11 +331,10 @@ def _write_json(path: Path, data) -> None:
         log.warning("could not write %s", path)  # a convenience, never a reason to fail
 
 
-# The header strip at the top of the page (ui/styles.css, --chrome) is Black,
-# and the title bar is painted to match so the two read as one band. Caption
-# text is the brand's Greige.
-CHROME_RGB = (0x00, 0x00, 0x00)
-CAPTION_TEXT_RGB = (0xD7, 0xD6, 0xCC)
+# The header strip at the top of the page (ui/styles.css, --chrome). The title
+# bar is painted the same colour so the two read as one band.
+CHROME_RGB = (0x0B, 0x0B, 0x0E)
+CAPTION_TEXT_RGB = (0xA1, 0xA1, 0xAA)
 
 
 def style_title_bar(window: webview.Window) -> None:
@@ -372,8 +371,40 @@ def style_title_bar(window: webview.Window) -> None:
         attr(35, colorref(CHROME_RGB))         # DWMWA_CAPTION_COLOR
         attr(36, colorref(CAPTION_TEXT_RGB))   # DWMWA_TEXT_COLOR
         attr(34, colorref(CHROME_RGB))         # DWMWA_BORDER_COLOR
+        hide_caption(window)
     except Exception:  # noqa: BLE001 - cosmetic only
         log.warning("could not style the title bar", exc_info=True)
+
+
+def hide_caption(window: webview.Window) -> None:
+    """
+    Stop Windows drawing the icon and title text in the title bar, leaving an
+    empty strip with the caption buttons that runs into the header, where the
+    INSITE DC wordmark and the app name sit instead.
+
+    Only the drawing is skipped: the window keeps its title and icon, so the
+    taskbar and Alt+Tab still name it and show the logo.
+    """
+    import ctypes
+    from ctypes import wintypes
+
+    from System import Action  # pythonnet, which pywebview uses on Windows
+
+    form = window.native
+
+    class WTA_OPTIONS(ctypes.Structure):  # noqa: N801 - Win32 name
+        _fields_ = [("dwFlags", wintypes.DWORD), ("dwMask", wintypes.DWORD)]
+
+    def apply() -> None:
+        # The title bar icon is WinForms' to draw, so it is turned off there.
+        form.ShowIcon = False
+        flags = 0x1 | 0x2  # WTNCA_NODRAWCAPTION | WTNCA_NODRAWICON
+        options = WTA_OPTIONS(flags, flags)
+        set_theme = ctypes.windll.uxtheme.SetWindowThemeAttribute
+        set_theme.argtypes = [wintypes.HWND, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
+        set_theme(form.Handle.ToInt64(), 1, ctypes.byref(options), ctypes.sizeof(options))  # WTA_NONCLIENT
+
+    form.Invoke(Action(apply))  # WinForms properties belong to the UI thread
 
 
 def on_drop(api: Api, event: dict) -> None:
@@ -439,7 +470,7 @@ def main() -> None:
     width, height = initial_size()
     window = webview.create_window(
         APP_NAME, str(resource("ui/index.html")), js_api=api,
-        width=width, height=height, min_size=MIN_SIZE, background_color="#0A2435",
+        width=width, height=height, min_size=MIN_SIZE, background_color="#09090b",
     )
     api._window = window
     window.events.shown += lambda: style_title_bar(window)

@@ -8,8 +8,7 @@
  * and sits), Export.
  */
 
-// Recipient markers in brand tones: Greige and Stormcloud, then steps between.
-const PASTELS = ["#D7D6CC", "#8FA0AC", "#B8B4A2", "#63737F", "#A9B6BE", "#CFC3A8"];
+const PASTELS = ["#8fb4ff", "#c4a8ff", "#8fe3c8", "#ffc29a", "#ff9fb8", "#e8d29a"];
 const COLORS = { grey: "#999999", red: "#d93333", blue: "#2659d9", black: "#000000" };
 const STEP_COUNT = 3;
 const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
@@ -252,7 +251,7 @@ function renderFiles() {
   $("#dropzone h2").textContent = state.sources.length ? "Add more PDFs or folders" : "Drag and drop PDFs or folders here";
 
   $("#sources").innerHTML = state.sources.map((s, i) => {
-    const tint = "#D7D6CC";
+    const tint = s.kind === "folder" ? "#8fb4ff" : "#ffc29a";
     const problems = s.problems || [];
     const meta = [
       s.pdfs ? `<span class="pill"><i></i>${s.kind === "folder" ? plural(s.pdfs, "PDF") : "PDF"}</span>` : "",
