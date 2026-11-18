@@ -425,6 +425,14 @@ def _crop_media_to_visible(doc: pymupdf.Document, xref: int) -> bool:
     return True
 
 
+def _new_stream(doc: pymupdf.Document, data: bytes) -> int:
+    """Add a small, uncompressed content stream to the document; returns its xref."""
+    xref = doc.get_new_xref()
+    doc.update_object(xref, "<<>>")
+    doc.update_stream(xref, data, compress=False)
+    return xref
+
+
 def _normalise_page(page: pymupdf.Page) -> bool:
     """
     Bring the page to a clean, rotation-free state before watermarking.
@@ -492,13 +500,16 @@ def _normalise_page(page: pymupdf.Page) -> bool:
              else _box(doc.xref_get_key(xref, key)[1])
              for key in ("CropBox", "TrimBox", "BleedBox", "ArtBox")}
 
-    content = page.read_contents()
-    new_stream = f"q\n{a} {b} {c} {d} {e:g} {f:g} cm\n".encode() + content + b"\nQ\n"
+    # Bracket the existing content between two tiny new streams rather than
+    # rewriting it. Reading and re-compressing a dense CAD sheet's content
+    # took ~1 s a page - over 90% of an export - and the existing streams
+    # (which another page might share) are left exactly as they were.
     xrefs = page.get_contents()
     if xrefs:
-        doc.update_stream(xrefs[0], new_stream, compress=True)
-        if len(xrefs) > 1:
-            page.set_contents(xrefs[0])
+        prefix = _new_stream(doc, f"q\n{a} {b} {c} {d} {e:g} {f:g} cm\n".encode())
+        suffix = _new_stream(doc, b"\nQ\n")
+        parts = " ".join(f"{x} 0 R" for x in (prefix, *xrefs, suffix))
+        doc.xref_set_key(xref, "Contents", f"[{parts}]")
 
     _, _, nw, nh = mapped(media)
     # Raw keys are written directly: PyMuPDF's set_*box helpers work in
