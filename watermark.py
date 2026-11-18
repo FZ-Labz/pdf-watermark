@@ -786,8 +786,12 @@ def check_pdf(path: Path | str) -> str | None:
 # preview). So each page is rasterised once, kept as a one-page PDF holding
 # just that image, and every later preview draws the watermark over the image.
 # The result matches a full render to within a shade of anti-aliasing.
+#
+# The image is kept as a JPEG: ~150 KB a page instead of ~2 MB raw, so the
+# cache holds a whole drawing set's first pages in less memory than six raw
+# ones took, and flipping back through the documents is instant.
 
-_PREVIEW_CACHE_SIZE = 6        # pages; each entry is the compressed page image
+_PREVIEW_CACHE_SIZE = 100      # pages, ~110 KB each: about 11 MB at most
 _backgrounds: OrderedDict[tuple, tuple[bytes, int, int]] = OrderedDict()
 _backgrounds_lock = threading.Lock()   # previews arrive on the app's API threads
 
@@ -817,7 +821,8 @@ def _preview_background(source: Path, page_index: int, max_px: int,
         pix = page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom), alpha=False)
         holder = pymupdf.open()
         holder.new_page(width=page.rect.width, height=page.rect.height).insert_image(
-            pymupdf.Rect(0, 0, page.rect.width, page.rect.height), pixmap=pix)
+            pymupdf.Rect(0, 0, page.rect.width, page.rect.height),
+            stream=pix.tobytes("jpg", jpg_quality=92))
         entry = (holder.tobytes(), index, doc.page_count)
         holder.close()
     finally:
