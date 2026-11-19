@@ -1,7 +1,8 @@
 name: Release
 
-# Push a version tag and this builds the Windows app and publishes it on the
-# repository's Releases page:
+# Push a version tag and this builds the Windows app, packs it with Velopack
+# (an installer plus update packages) and publishes it on the repository's
+# Releases page, where installed copies find their updates:
 #
 #     echo 1.1.0 > VERSION && git commit -am "Release 1.1.0"
 #     git tag v1.1.0 && git push --follow-tags
@@ -10,8 +11,7 @@ name: Release
 # first launch; the README walks people through it.
 #
 # macOS is on hold for now. The PyInstaller spec already builds a .app on a
-# Mac; to bring it back, add a macos-latest entry to the matrix below with a
-# "Package (macOS)" step that ad-hoc signs the .app (codesign --sign -) and
+# Mac; to bring it back, add a macos-latest job with a step that ad-hoc signs the .app (codesign --sign -) and
 # packs it with hdiutil into a .dmg.
 on:
   push:
@@ -20,6 +20,11 @@ on:
 
 permissions:
   contents: read
+
+env:
+  # Keep in step with the velopack package in requirements.txt.
+  VPK_VERSION: "1.2.161"
+  PACK_ID: PDFWatermark
 
 jobs:
   test:
@@ -34,19 +39,18 @@ jobs:
 
   build:
     needs: test
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            asset: PDF-Watermark-Windows.exe
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
 
       - name: Check the tag matches VERSION
         if: startsWith(github.ref, 'refs/tags/')
@@ -58,7 +62,6 @@ jobs:
           fi
 
       - name: Stamp the version into the Windows file properties
-        if: runner.os == 'Windows'
         shell: bash
         run: |
           V=$(cat VERSION); T=$(echo "$V" | tr . ,)
@@ -66,39 +69,48 @@ jobs:
 
       - run: pip install -r requirements.txt "pyinstaller>=6.5"
       - run: pyinstaller packaging/pdf-watermark.spec --noconfirm
+      - run: dotnet tool install -g vpk --version ${{ env.VPK_VERSION }}
 
-      - name: Package (Windows)
-        if: runner.os == 'Windows'
+      # The previous release, so vpk can build a small delta update from it.
+      # Fails harmlessly when there is no Velopack release yet.
+      - name: Fetch the previous release
         shell: bash
-        run: mv "dist/PDF Watermark.exe" "dist/${{ matrix.asset }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: vpk download github --repoUrl "https://github.com/${{ github.repository }}" --token "$GH_TOKEN" -o releases || true
+
+      - name: Pack with Velopack
+        shell: bash
+        run: |
+          vpk pack --packId "$PACK_ID" --packVersion "$(cat VERSION)" \
+            --packDir "dist/PDF Watermark" --mainExe "PDF Watermark.exe" \
+            --packTitle "PDF Watermark" --packAuthors "FZ Labz" \
+            --icon packaging/icon.ico --outputDir releases
+          # A friendlier name for the file people download.
+          mv "releases/$PACK_ID-win-Setup.exe" releases/PDF-Watermark-Setup.exe
+          ls -la releases
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.asset }}
-          path: dist/${{ matrix.asset }}
+          name: velopack-release
+          path: releases/
           if-no-files-found: error
 
-  publish:
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          path: assets
-          merge-multiple: true
-      - name: Create the release
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cd assets && sha256sum * > SHA256SUMS.txt && cd ..
           cat > notes.md <<'NOTES'
-          **Download** the file for your computer below:
+          **Download** `PDF-Watermark-Setup.exe` below and double-click it. It installs in a few seconds, with no admin rights, and adds the app to the Start menu. After that the app updates itself: when a new version is out it offers to install it.
 
-          - **Windows** - `PDF-Watermark-Windows.exe`. Double-click to run; nothing to install. The first time, Windows may show *"Windows protected your PC"*: click **More info**, then **Run anyway**.
-          Built by GitHub Actions directly from this repository. See the [code signing policy](https://github.com/FZ-Labz/pdf-watermark#-code-signing-policy) and [privacy policy](https://github.com/FZ-Labz/pdf-watermark#-privacy-and-uninstalling).
+          The first time, Windows may show *"Windows protected your PC"*: click **More info**, then **Run anyway**.
+
+          The other files (`.nupkg`, `releases.win.json`, `RELEASES`) are what installed copies use to update; you don't need them.
+          Built by GitHub Actions directly from this repository. See the [privacy policy](https://github.com/FZ-Labz/pdf-watermark#-privacy-and-uninstalling).
           NOTES
-          gh release create "$GITHUB_REF_NAME" assets/* --title "PDF Watermark $GITHUB_REF_NAME" --notes-file notes.md --verify-tag
+          vpk upload github --repoUrl "https://github.com/${{ github.repository }}" --token "$GH_TOKEN" \
+            --outputDir releases --publish --tag "$GITHUB_REF_NAME" \
+            --releaseName "PDF Watermark $GITHUB_REF_NAME"
+          gh release edit "$GITHUB_REF_NAME" --notes-file notes.md

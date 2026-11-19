@@ -103,6 +103,9 @@ const mockApi = {
   async load_companies() { try { return JSON.parse(localStorage.getItem("companies") || "[]"); } catch { return []; } },
   async save_companies(names) { try { localStorage.setItem("companies", JSON.stringify(names)); } catch { /* preview only */ } },
   async log_js_error() {},
+  async check_update() { return null; },
+  async install_update() { return "Updates only work in the installed app."; },
+  async open_url() {},
 };
 let mockCancelled = false;
 
@@ -125,6 +128,30 @@ window.addEventListener("pywebviewready", async () => {
   state.companies = await api.load_companies();
   const initial = await api.initial_sources();
   if (initial.length) addSources(initial); else render();
+  checkForUpdate();
+});
+
+/* ---- Updates ------------------------------------------------------------- */
+
+let update = null;
+async function checkForUpdate() {
+  update = await api.check_update();
+  if (!update) return;
+  $("#updateText").textContent = `Version ${update.version} is available.`;
+  $("#update").hidden = false;
+}
+$("#updateLater").addEventListener("click", () => { $("#update").hidden = true; });
+$("#updateNow").addEventListener("click", async e => {
+  const btn = e.currentTarget;
+  if (btn.dataset.page) { api.open_url(btn.dataset.page); return; }
+  btn.disabled = true; $("#updateLater").disabled = true;
+  btn.textContent = "Updating…";
+  $("#updateText").textContent = `Downloading version ${update.version}. The app will restart by itself.`;
+  const error = await api.install_update();
+  if (!error) return;                       // the app is restarting
+  $("#updateText").textContent = error;
+  btn.textContent = "Open download page"; btn.dataset.page = update.page;
+  btn.disabled = false; $("#updateLater").disabled = false;
 });
 
 /* ---- Helpers ------------------------------------------------------------- */

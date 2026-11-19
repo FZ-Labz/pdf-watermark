@@ -31,6 +31,7 @@ from webview.dom import DOMEventHandler
 
 import batch_watermark as bw
 import fonts
+import updater
 import watermark as wm
 
 APP_NAME = "PDF Watermark"
@@ -318,6 +319,39 @@ class Api:
     def save_companies(self, names: list[str]) -> None:
         _write_json(companies_file(), sorted(set(names), key=str.casefold))
 
+    # ---- Updates -------------------------------------------------------
+
+    def check_update(self) -> dict | None:
+        """A newer release, if there is one - only for the installed Windows app."""
+        if not (getattr(sys, "frozen", False) and sys.platform == "win32") or "--no-update" in sys.argv:
+            return None
+        self._update = updater.check()
+        if not self._update:
+            return None
+        log.info("update available: %s", self._update["version"])
+        return {"version": self._update["version"], "page": self._update["page"]}
+
+    def install_update(self) -> str | None:
+        """Download the update and restart into it. Returns an error message on failure."""
+        update = getattr(self, "_update", None)
+        if not update or not self._busy.acquire(blocking=False):
+            return "Can't update right now."
+        try:
+            updater.install(update)
+        except Exception as exc:  # noqa: BLE001 - shown in the app; the installed copy still works
+            self._busy.release()
+            log.warning("update failed", exc_info=True)
+            return f"The update didn't install ({exc}). You can download it from GitHub instead."
+        log.info("updating to %s, restarting", update["version"])
+        self._window.destroy()
+        return None
+
+    def open_url(self, url: str) -> None:
+        if url.startswith("https://github.com/"):
+            import webbrowser
+
+            webbrowser.open(url)
+
     def log_js_error(self, message: str) -> None:
         log.error("ui: %s", message)
 
@@ -463,6 +497,7 @@ def use_software_rendering() -> None:
 
 
 def main() -> None:
+    updater.startup()   # first: Velopack's install/uninstall hooks exit here
     start_logging()
     log.info("start %s", sys.argv[1:])
     use_software_rendering()
