@@ -92,11 +92,16 @@ h2 em { color: var(--blue); }
 .step span span { font-size: .9rem; color: var(--secondary); }
 .step:hover { background: #eef3fa; }
 .step[aria-current="step"] { background: var(--selection); box-shadow: inset 3px 0 #1a66c9; }
-.app-preview { min-width: 0; background: #e6ebf2; border: 1px solid #bcc7d4; }
+.app-preview { position: relative; min-width: 0; margin: 0; border-radius: 14px; overflow: hidden; background: linear-gradient(160deg, rgb(255 255 255 / .78), rgb(232 240 252 / .55)); -webkit-backdrop-filter: blur(22px) saturate(1.6); backdrop-filter: blur(22px) saturate(1.6); border: 1px solid rgb(255 255 255 / .9); box-shadow: 0 0 0 1px rgb(21 46 75 / .08), 0 2px 6px rgb(21 46 75 / .06), 0 24px 60px -12px rgb(21 46 75 / .28), inset 0 1px 0 rgb(255 255 255 / .95); }
+.walkthrough { position: relative; isolation: isolate; }
+.walkthrough::before { content: ""; position: absolute; z-index: -1; right: -4%; top: 12%; width: 62%; height: 76%; border-radius: 50%; background: radial-gradient(closest-side, rgb(26 102 201 / .22), rgb(169 205 255 / .18) 55%, transparent); filter: blur(30px); pointer-events: none; }
+.app-toolbar::before { content: ""; flex: none; width: 12px; height: 12px; border-radius: 50%; background: #ff5f57; box-shadow: 20px 0 #febc2e, 40px 0 #28c840; margin-right: 44px; }
+.app-toolbar { border-bottom: 1px solid rgb(21 46 75 / .07); background: rgb(255 255 255 / .35); }
+.app-toolbar .screen-label { margin-right: auto; }
 .app-toolbar, .app-caption { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
 .app-toolbar { padding: .7rem 1rem; }
 .screen-label { font-weight: bold; color: #2f4459; }
-.app-shot { display: grid; margin: 0 .95rem; aspect-ratio: 1.48; align-items: center; background: #101820; cursor: zoom-in; }
+.app-shot { display: grid; margin: .95rem .95rem 0; aspect-ratio: 1.48; align-items: center; background: #101820; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 0 rgb(255 255 255 / .6), 0 6px 18px rgb(16 24 32 / .22); cursor: zoom-in; }
 .app-shot img { width: 100%; height: 100%; object-fit: contain; max-height: 100%; min-height: 0; }
 .app-caption { padding: .7rem 1rem .78rem; font-size: .86rem; color: #31455a; }
 .app-toolbar a { font-size: .85rem; white-space: nowrap; text-underline-offset: .22em; font-weight: 600; }
