@@ -42,9 +42,7 @@ svg { display: block; }
 [hidden] { display: none !important; }
 
 /* ---- Backdrop ------------------------------------------------------------
-   A still blue gradient in the INSITE DC colours behind the frosted card:
-   Midnight (#0A2435) lifted towards the top, with a soft Stormcloud (#63737F)
-   light under the header, deepening to near-black at the bottom. */
+   A blue gradient behind the frosted card. */
 .backdrop {
   position: fixed; inset: 0; pointer-events: none;
   background:
@@ -52,15 +50,9 @@ svg { display: block; }
     linear-gradient(180deg, #123A57 0%, #0A2435 45%, #05141F 100%);
 }
 
-/* ---- Brand lockup ---------------------------------------------------------
-   The INSITE DC wordmark and the app name, at the left of the header. The
-   title bar draws no icon or text, so this is where the app names itself.
-   On a narrow window only the wordmark stays, so it never crowds the steps. */
-.lockup { display: flex; align-items: center; gap: 12px; min-width: 0; padding-left: 4px; }
-.lockup img { display: block; height: 13px; width: auto; }
-.lockup-rule { width: 1px; height: 16px; background: var(--border-strong); }
-.lockup-name { color: var(--muted); white-space: nowrap; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; }
-@media (max-width: 1000px) { .lockup-rule, .lockup-name { display: none; } }
+/* The app name remains visible when Windows hides the native title. */
+.lockup { min-width: 0; padding-left: 4px; }
+.lockup-name { color: var(--text); white-space: nowrap; font-size: 14px; font-weight: 600; }
 
 /* ---- Layout -------------------------------------------------------------- */
 .app {

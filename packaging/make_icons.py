@@ -17,18 +17,13 @@ S = 1024
 X = 4  # drawn at 4x, then scaled down, for smooth edges
 
 
-# INSITE DC brand colours.
-GREIGE = (0xD7, 0xD6, 0xCC)
-FOLD = (0x9A, 0xA1, 0x9F)       # a shade darker than Greige
-MIDNIGHT = (0x0A, 0x24, 0x35)
+PAPER = "#eff6ff"
+FOLD = "#9bc4fb"
+MARK = "#1863c6"
 
 
 def draw() -> Image.Image:
-    """
-    A Greige document with a folded corner, and inside it the three bars
-    that form the "E" of the INSITE DC wordmark, in Midnight. No tile behind
-    it, so the page shape itself is the icon. Square corners, as in the brand.
-    """
+    """Draw a folded PDF page with a diagonal watermark."""
     n = S * X
     img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
@@ -36,16 +31,11 @@ def draw() -> Image.Image:
     left, top, right, bottom = n * 0.17, n * 0.06, n * 0.83, n * 0.94
     fold = n * 0.20
     d.polygon([(left, top), (right - fold, top), (right, top + fold), (right, bottom), (left, bottom)],
-              fill=GREIGE + (255,))
-    d.polygon([(right - fold, top), (right - fold, top + fold), (right, top + fold)], fill=FOLD + (255,))
+              fill=PAPER)
+    d.polygon([(right - fold, top), (right - fold, top + fold), (right, top + fold)], fill=FOLD)
 
-    # The E: three equal bars, centred a little below the middle of the page.
-    bar_left, bar_right = n * 0.31, n * 0.69
-    height, gap = n * 0.075, n * 0.07
-    first = n * 0.555 - (3 * height + 2 * gap) / 2
-    for i in range(3):
-        y = first + i * (height + gap)
-        d.rectangle([bar_left, y, bar_right, y + height], fill=MIDNIGHT + (255,))
+    d.polygon([(n * 0.30, n * 0.63), (n * 0.67, n * 0.42),
+               (n * 0.73, n * 0.53), (n * 0.36, n * 0.74)], fill=MARK)
     return img.resize((S, S), Image.LANCZOS)
 
 
