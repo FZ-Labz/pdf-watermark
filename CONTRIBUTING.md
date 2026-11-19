@@ -111,3 +111,17 @@ To release a new version, update and commit `VERSION`, then push a matching
 version tag. The [release workflow](.github/workflows/release.yml) runs the tests,
 builds `PDF-Watermark-Windows.exe`, and publishes it with a SHA-256 checksum.
 
+## Update the website images and branding
+
+The landing page is plain HTML, CSS and JavaScript in `docs/`. Replacing an image under its existing filename updates every page reference when GitHub Pages deploys.
+
+| To change | Files and edits |
+| --- | --- |
+| App screenshots | Replace the original-size PNGs `files.png`, `design.png`, `export.png` and `done.png` in `docs/screenshots/`. The README uses the same `design.png`. In the **Gallery source** block of `docs/index.html`, each link holds its image path, label, caption and alt text. Edit or duplicate one link to change the gallery. Keep the initially selected preview and its fallback image in sync when renaming that file. |
+| Sample drawing and recipients | Replace the three WebP files in `docs/prints/` with images of real recipient exports. The **Recipient previews** block in `docs/index.html` holds the full-size links, recipient names and drawing description. Update the initial image, its alt text and the sheet reference when changing the sample drawing. |
+| Header logo and browser icon | Replace `docs/media/app-icon.png` with the square transparent product icon. The header and favicon both use this file. |
+| Name, colours and typography | Edit the product name and search/social text in `docs/index.html` and the name in `README.md`. The principal colours and fonts are in the `:root` block at the top of `docs/styles.css`. Match the HTML `theme-color` to the navy background. |
+| Social preview | Replace `docs/media/pdf-watermark-share.png`, currently 1280 × 640. Update `og:image:alt` to describe the new card. If its size or URL changes, update the matching `og:image` tags in the HTML head. |
+| README illustrations | Update `docs/options.png` and `docs/page-sizes.png` and their descriptions in `README.md`. |
+
+Open `docs/index.html` locally, select each screenshot and recipient, and check the full-size links. On a narrow screen, confirm the logo and gallery controls fit. The repository publishes from **Settings → Pages → Deploy from a branch → main → /docs**. Its **About** website points to [the public landing page](https://fz-labz.github.io/pdf-watermark/).

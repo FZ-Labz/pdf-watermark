@@ -16,6 +16,7 @@
   <meta property="og:image:alt" content="PDF Watermark for Windows with a recipient-specific watermark on a drawing.">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#152e4b">
+  <link rel="icon" href="media/app-icon.png" type="image/png">
   <link rel="stylesheet" href="styles.css">
   <script src="demo.js" defer></script>
 </head>
@@ -23,9 +24,9 @@
   <a class="skip-link" href="#content">Skip to content</a>
   <header>
     <div class="wrap masthead">
-      <a class="brand" href="./"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>PDF Watermark</a>
+      <a class="brand" href="./"><img class="brand-mark" src="media/app-icon.png" width="32" height="32" alt="">PDF Watermark</a>
       <nav aria-label="Main navigation">
-        <a href="#walkthrough">Walkthrough</a>
+        <a href="#walkthrough">Screenshots</a>
         <a href="#faq">FAQ</a>
         <a class="repo" href="https://github.com/FZ-Labz/pdf-watermark">GitHub</a>
       </nav>
@@ -43,7 +44,8 @@
           <p class="requirements">Free <span>·</span> Windows 10 &amp; 11 <span>·</span> Portable .exe</p>
         </div>
 
-        <figure class="issue-preview">
+        <!-- Recipient previews: replace the linked WebP files to refresh this example. -->
+        <figure class="issue-preview" data-description="Architectural drawing of a sawtooth-roof pavilion.">
           <div class="proof-heading"><span class="eyebrow">Sample output</span><span class="proof-number">A–301 / REV B</span></div>
           <div class="drawing-board">
             <span class="cross tl" aria-hidden="true"></span><span class="cross tr" aria-hidden="true"></span>
@@ -55,9 +57,9 @@
           <figcaption class="recipient-switch">
             <span class="switch-label" id="recipient-label">View copy for</span>
             <div class="choices" role="group" aria-labelledby="recipient-label">
-              <a href="prints/forma.webp" class="choice" aria-current="true" data-name="Forma Studio">Forma Studio</a>
-              <a href="prints/northline.webp" class="choice" data-name="Northline">Northline</a>
-              <a href="prints/atelier.webp" class="choice" data-name="Atelier 08">Atelier 08</a>
+              <a href="prints/forma.webp" class="choice" aria-current="true">Forma Studio</a>
+              <a href="prints/northline.webp" class="choice">Northline</a>
+              <a href="prints/atelier.webp" class="choice">Atelier 08</a>
             </div>
             <span class="sr-only" id="copy-status" aria-live="polite"></span>
           </figcaption>
@@ -69,31 +71,41 @@
       <div class="walk-intro">
         <p class="eyebrow section-kicker"><span aria-hidden="true"></span>Inside the app</p>
         <h2 id="walk-title">From folder <br>to <em>finished set.</em></h2>
-        <p class="walk-desc">Take a drawing pack through the three steps in PDF Watermark.</p>
-        <div class="steps" role="group" aria-label="Choose a screenshot">
-          <a class="step" href="screenshots/files.png" data-stage="files">
+        <p class="walk-desc">Explore the screens from a three-drawing tender pack.</p>
+        <!-- Gallery source: each link sets the image, thumbnail label, caption and alt text. -->
+        <div class="steps" role="group" aria-label="Choose an app screenshot">
+          <a class="step" href="screenshots/files.png"
+             data-alt="The Files screen lists three PDFs, including ground floor and electrical drawings."
+             data-caption="Check which drawings are included in the pack.">
             <span class="step-code" aria-hidden="true">01</span><span><strong>Add your PDFs</strong><span>Drop in one file or a whole folder.</span></span>
           </a>
-          <a class="step" href="screenshots/design.png" data-stage="design" aria-current="step">
+          <a class="step" href="screenshots/design.png" aria-current="step"
+             data-alt="The Design screen shows recipient settings beside a watermarked tender drawing."
+             data-caption="Preview the watermark on your drawing.">
             <span class="step-code" aria-hidden="true">02</span><span><strong>Design the mark</strong><span>Set the recipients, style and placement.</span></span>
           </a>
-          <a class="step" href="screenshots/export.png" data-stage="export">
+          <a class="step" href="screenshots/export.png"
+             data-alt="The Export screen counts three source documents, one recipient and three output copies."
+             data-caption="Review the copy count and output destination.">
             <span class="step-code" aria-hidden="true">03</span><span><strong>Export the copies</strong><span>Choose where each marked set goes.</span></span>
+          </a>
+          <a class="step" href="screenshots/done.png"
+             data-alt="The finished export screen confirms that the watermarked copies were created."
+             data-caption="Open the output folder to find the finished copies.">
+            <span class="step-code" aria-hidden="true">04</span><span><strong>Find your copies</strong><span>Open the folder when the export finishes.</span></span>
           </a>
         </div>
       </div>
-      <figure class="app-preview">
+      <!-- The initially selected design screenshot also works with JavaScript disabled. -->
+      <figure class="app-preview" aria-labelledby="screen-label">
         <div class="app-toolbar">
-          <span class="screen-label" id="screen-label">Design preview</span>
-          <a href="media/pdf-watermark-demo.gif" id="play" class="play"><span aria-hidden="true" class="play-shape"></span><span id="play-text">Play demo</span></a>
+          <span class="screen-label" id="screen-label">Design the mark</span>
+          <a id="full-image" href="screenshots/design.png">View full size</a>
         </div>
-        <a href="screenshots/design.png" id="image-link" class="app-shot" aria-label="Open full-size Design screenshot">
+        <a href="screenshots/design.png" id="image-link" class="app-shot" aria-label="Open full-size screenshot">
           <img id="app-image" src="screenshots/design.png" width="1105" height="734" loading="lazy" alt="The Design screen shows recipient settings beside a watermarked tender drawing.">
         </a>
-        <figcaption class="app-caption">
-          <span id="caption">Preview the watermark on your drawing.</span>
-          <a id="full-image" href="screenshots/design.png">View full size</a>
-        </figcaption>
+        <figcaption class="app-caption" id="caption" aria-live="polite">Preview the watermark on your drawing.</figcaption>
       </figure>
     </section>
 
@@ -132,4 +144,3 @@
   </footer>
 </body>
 </html>
-

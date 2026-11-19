@@ -9,13 +9,9 @@ Everything is processed on your computer.
 
 **[Download PDF Watermark for Windows](https://github.com/FZ-Labz/pdf-watermark/releases/latest/download/PDF-Watermark-Windows.exe)** · Windows 10 and 11 · Portable `.exe` · [Release notes and SHA-256 checksums](https://github.com/FZ-Labz/pdf-watermark/releases/latest)
 
-<details open>
-<summary>Watch the app watermark a sample tender pack</summary>
-<picture>
-  <source media="(prefers-reduced-motion: reduce)" srcset="docs/media/pdf-watermark-demo.png">
-  <img src="docs/media/pdf-watermark-demo.gif" width="860" alt="PDF Watermark finds three PDFs in a sample tender pack, previews a company name on a drawing, and exports three watermarked copies.">
-</picture>
-</details>
+[Browse all four app screenshots](https://fz-labz.github.io/pdf-watermark/#walkthrough)
+
+[![The Design screen shows recipient settings next to a drawing with a diagonal company watermark.](docs/screenshots/design.png)](https://fz-labz.github.io/pdf-watermark/#walkthrough)
 
 ## What it does
 
