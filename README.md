@@ -1,32 +1,28 @@
 # PDF Watermark
 
-PDF Watermark puts each recipient's name on every page of their own copy of your PDFs.
+**Batch watermark a whole folder of PDFs in one run.**
 
-**[Download for Windows](https://github.com/FZ-Labz/pdf-watermark/releases/latest/download/PDF-Watermark-Windows.exe)**
-Windows 10 and 11, free, no install, works offline.
+Set up your watermark once and apply it to every page, including PDFs in subfolders. The app saves new copies with the same folder structure and keeps your originals intact. Everything runs offline on your Windows PC.
 
-![The Design screen: recipients on the left, a preview of the marked page on the right](docs/screenshots/design.png)
+**[Download for Windows](https://github.com/FZ-Labz/pdf-watermark/releases/latest/download/PDF-Watermark-Windows.exe)** · Windows 10 and 11 · Free · Portable
 
-## What it does
+![The Design screen shows watermark settings beside a preview of a marked drawing](docs/screenshots/design.png)
 
-- Makes one marked copy of your files for each recipient.
-- Handles a whole folder at once, including subfolders.
-- Shows a live preview before you export.
-- Lets you choose the font, colour and size, and a diagonal, tiled or placed mark.
-- Never changes your originals. Nothing leaves your computer.
+## Watermark a folder
 
-## How to use it
+1. **Add files.** Drop a folder into the app or click **Select folder**. You can also add individual PDFs.
+2. **Design the watermark.** For a single mark such as `DRAFT`, enter it in **Recipients** and click **Add**. Under **Wording**, choose **Custom**, select **Name only**, and leave **Add today's date** off. Choose a diagonal, tiled, or positioned mark and check the live preview.
+3. **Export.** Choose where to save the copies and click **Watermark**.
 
-1. Add your PDFs, or a whole folder.
-2. Add the recipients, then pick how the mark looks.
-3. Check the preview for each recipient.
-4. Click Watermark. Each recipient gets a new set of PDFs.
+Sending a pack to several people? Add each name under **Recipients** to export a separately marked set for each person or company.
 
-## Requirements
+## 🔏 Code signing policy
 
-Windows 10 or 11. There is nothing to install.
+The portable executable is built by GitHub Actions from this repository. The current release is unsigned, so Windows SmartScreen may flag it. The [latest release](https://github.com/FZ-Labz/pdf-watermark/releases/latest) includes the published [SHA-256 checksums](https://github.com/FZ-Labz/pdf-watermark/releases/latest/download/SHA256SUMS.txt).
 
-The app is not code-signed yet. The first time you open it, Windows may say "Windows protected your PC". Click **More info**, then **Run anyway**.
+## 🔒 Privacy and uninstalling
+
+Documents are processed locally. The app stores its settings in `%APPDATA%\PDF Watermark`. To uninstall it, delete the executable. You can also delete the settings folder.
 
 ## Help
 
@@ -34,11 +30,19 @@ The app is not code-signed yet. The first time you open it, Windows may say "Win
 - If something goes wrong, open an [issue](https://github.com/FZ-Labz/pdf-watermark/issues). You can attach the log at `%APPDATA%\PDF Watermark\app.log`.
 - A watermark shows who got a copy. It does not stop anyone opening the file. To restrict access, use encryption.
 
-**Privacy:** your documents are processed on your computer. The app keeps its settings in `%APPDATA%\PDF Watermark`. To uninstall, delete the `.exe` and, if you like, that folder.
-
 ## For developers
 
-- Run from source, project layout and release steps: [CONTRIBUTING.md](CONTRIBUTING.md).
-- Command line: `python batch_watermark.py my_folder --company "Acme" "Globex"`. All options are in [CONTRIBUTING.md](CONTRIBUTING.md#command-line-options).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, project layout and release steps.
+
+```sh
+# Apply one watermark to a whole folder
+python batch_watermark.py my_folder --text "DRAFT"
+
+# Export a separate set for each company
+python batch_watermark.py my_folder --company "Acme" "Globex"
+```
+
+See the [command-line options](CONTRIBUTING.md#command-line-options).
+
 - Licence: MIT, see [LICENSE](LICENSE). The app bundles [PyMuPDF](https://pymupdf.readthedocs.io/) under the [GNU AGPL v3](https://www.gnu.org/licenses/agpl-3.0.html), so the app as distributed is covered by the AGPL. Its source is this repository.
 - Thanks to [PyMuPDF](https://pymupdf.readthedocs.io/), [fontTools](https://github.com/fonttools/fonttools) and [pywebview](https://pywebview.flowrl.com/), and to the open-source watermark tools that gave me ideas: [bastienlc/pdf-watermark](https://github.com/bastienlc/pdf-watermark), [ajaxray/markpdf](https://github.com/ajaxray/markpdf), [oclero/pdfwm](https://github.com/oclero/pdfwm), [aanorlondo/pdf-watermark](https://github.com/aanorlondo/pdf-watermark), [TobseF/My-PDF-Watermark](https://github.com/TobseF/My-PDF-Watermark).
