@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Free offline PDF watermark for Windows, one copy per recipient</title>
+  <meta name="description" content="Watermark a PDF or a whole drawing pack for every recipient. PDF Watermark is a free, offline Windows app that exports separate copies and preserves your originals.">
+  <link rel="canonical" href="https://fz-labz.github.io/pdf-watermark/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://fz-labz.github.io/pdf-watermark/">
+  <meta property="og:title" content="Free offline PDF watermark for Windows, one copy per recipient">
+  <meta property="og:description" content="Give each recipient their own marked set of PDFs. A free, portable Windows app that works offline.">
+  <meta property="og:image" content="https://fz-labz.github.io/pdf-watermark/media/pdf-watermark-share.png">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="640">
+  <meta property="og:image:alt" content="PDF Watermark for Windows with a recipient-specific watermark on a drawing.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#152e4b">
+  <link rel="stylesheet" href="styles.css">
+  <script src="demo.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to content</a>
+  <header>
+    <div class="wrap masthead">
+      <a class="brand" href="./"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>PDF Watermark</a>
+      <nav aria-label="Main navigation">
+        <a href="#walkthrough">Walkthrough</a>
+        <a href="#faq">FAQ</a>
+        <a class="repo" href="https://github.com/FZ-Labz/pdf-watermark">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="content" tabindex="-1">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap hero-layout">
+        <div class="pitch">
+          <p class="eyebrow hero-kicker"><span aria-hidden="true"></span>Offline PDF tool for Windows</p>
+          <h1 id="hero-title">One pack.<br><em>Many recipients.</em></h1>
+          <p class="lede">Send the same drawings or reports to different people. Put each recipient’s name on every page of their own copy.</p>
+          <a class="download" href="https://github.com/FZ-Labz/pdf-watermark/releases/latest/download/PDF-Watermark-Windows.exe"><span class="win-icon" aria-hidden="true"></span>Download for Windows</a>
+          <p class="requirements">Free <span>·</span> Windows 10 &amp; 11 <span>·</span> Portable .exe</p>
+        </div>
+
+        <figure class="issue-preview">
+          <div class="proof-heading"><span class="eyebrow">Sample output</span><span class="proof-number">A–301 / REV B</span></div>
+          <div class="drawing-board">
+            <span class="cross tl" aria-hidden="true"></span><span class="cross tr" aria-hidden="true"></span>
+            <span class="cross bl" aria-hidden="true"></span><span class="cross br" aria-hidden="true"></span>
+            <div class="paper-stack"><a href="prints/forma.webp" id="proof-link" aria-label="Open full-size drawing for Forma Studio">
+              <img id="proof" src="prints/forma.webp" width="1480" height="1040" fetchpriority="high" alt="Architectural drawing of a sawtooth-roof pavilion with Forma Studio stamped diagonally across the page.">
+            </a></div>
+          </div>
+          <figcaption class="recipient-switch">
+            <span class="switch-label" id="recipient-label">View copy for</span>
+            <div class="choices" role="group" aria-labelledby="recipient-label">
+              <a href="prints/forma.webp" class="choice" aria-current="true" data-name="Forma Studio">Forma Studio</a>
+              <a href="prints/northline.webp" class="choice" data-name="Northline">Northline</a>
+              <a href="prints/atelier.webp" class="choice" data-name="Atelier 08">Atelier 08</a>
+            </div>
+            <span class="sr-only" id="copy-status" aria-live="polite"></span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="walkthrough wrap" id="walkthrough" aria-labelledby="walk-title">
+      <div class="walk-intro">
+        <p class="eyebrow section-kicker"><span aria-hidden="true"></span>Inside the app</p>
+        <h2 id="walk-title">From folder <br>to <em>finished set.</em></h2>
+        <p class="walk-desc">Take a drawing pack through the three steps in PDF Watermark.</p>
+        <div class="steps" role="group" aria-label="Choose a screenshot">
+          <a class="step" href="screenshots/files.png" data-stage="files">
+            <span class="step-code" aria-hidden="true">01</span><span><strong>Add your PDFs</strong><span>Drop in one file or a whole folder.</span></span>
+          </a>
+          <a class="step" href="screenshots/design.png" data-stage="design" aria-current="step">
+            <span class="step-code" aria-hidden="true">02</span><span><strong>Design the mark</strong><span>Set the recipients, style and placement.</span></span>
+          </a>
+          <a class="step" href="screenshots/export.png" data-stage="export">
+            <span class="step-code" aria-hidden="true">03</span><span><strong>Export the copies</strong><span>Choose where each marked set goes.</span></span>
+          </a>
+        </div>
+      </div>
+      <figure class="app-preview">
+        <div class="app-toolbar">
+          <span class="screen-label" id="screen-label">Design preview</span>
+          <a href="media/pdf-watermark-demo.gif" id="play" class="play"><span aria-hidden="true" class="play-shape"></span><span id="play-text">Play demo</span></a>
+        </div>
+        <a href="screenshots/design.png" id="image-link" class="app-shot" aria-label="Open full-size Design screenshot">
+          <img id="app-image" src="screenshots/design.png" width="1105" height="734" loading="lazy" alt="The Design screen shows recipient settings beside a watermarked tender drawing.">
+        </a>
+        <figcaption class="app-caption">
+          <span id="caption">Preview the watermark on your drawing.</span>
+          <a id="full-image" href="screenshots/design.png">View full size</a>
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="faq" id="faq" aria-labelledby="faq-title">
+      <div class="wrap faq-layout">
+        <div>
+          <p class="eyebrow section-kicker"><span aria-hidden="true"></span>FAQ</p>
+          <h2 id="faq-title">Before you <br><em>download.</em></h2>
+        </div>
+        <div class="questions">
+          <details open>
+            <summary>Where are my PDFs processed?</summary>
+            <p>On your computer. Once downloaded, the app runs offline and requires no account. It writes new PDFs and keeps your originals intact.</p>
+          </details>
+          <details>
+            <summary>Can I watermark an entire drawing set?</summary>
+            <p>Yes. Add a folder and the app finds PDFs in its subfolders. Each recipient gets a separate set with the original folder structure. Watermarks scale to each page, including mixed drawing and report sizes.</p>
+          </details>
+          <details>
+            <summary>Which watermark styles are available?</summary>
+            <p>Choose diagonal, tiled or positioned text. Adjust the font, colour, size and opacity, then check the result on a page before exporting.</p>
+          </details>
+          <details>
+            <summary>How do I run it on Windows?</summary>
+            <p>Download <code>PDF-Watermark-Windows.exe</code> and open it on Windows 10 or 11. The app is portable. You can find release notes and checksums on the <a href="https://github.com/FZ-Labz/pdf-watermark/releases/latest">GitHub release page</a>.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer>
+    <div class="wrap footer-inner">
+      <span>PDF Watermark <span class="footer-slash">/</span> <a href="https://github.com/FZ-Labz">FZ-Labz</a></span>
+      <a href="https://github.com/FZ-Labz/pdf-watermark/releases">Release notes</a>
+    </div>
+  </footer>
+</body>
+</html>
+
