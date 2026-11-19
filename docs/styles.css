@@ -182,3 +182,25 @@ details code { font: 600 1em var(--sans); overflow-wrap: anywhere; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
 }
+
+/* Full-size screenshot viewer */
+.viewer-open { overflow: hidden; }
+.viewer { width: 100vw; height: 100vh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: transparent; color: #f6f9fd; }
+.viewer[open] { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; }
+.viewer::backdrop { background: rgb(10 24 42 / .82); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.viewer-frame { margin: 0; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 4.5rem 0 2rem; min-width: 0; }
+.viewer-image { max-width: 100%; max-height: calc(100vh - 10rem); border-radius: 10px; box-shadow: 0 24px 70px rgb(0 0 0 / .45); background: #101820; }
+.viewer-caption { display: flex; flex-wrap: wrap; justify-content: center; gap: .35rem .9rem; font-size: .95rem; text-align: center; }
+.viewer-caption span { color: #c6d4e2; }
+.viewer-caption em { font-style: normal; color: var(--accent); font-weight: 600; }
+.viewer button { display: grid; place-items: center; border: 1px solid rgb(255 255 255 / .25); background: rgb(255 255 255 / .1); color: #fff; cursor: pointer; border-radius: 50%; font: 400 2rem/1 var(--sans); }
+.viewer button:hover { background: rgb(255 255 255 / .22); }
+.viewer button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.viewer-nav { width: 3.2rem; height: 3.2rem; margin: 0 clamp(.5rem, 2vw, 1.5rem); padding-bottom: .2rem; }
+.viewer-close { position: fixed; top: 1rem; right: 1rem; width: 2.75rem; height: 2.75rem; font-size: 1.8rem; z-index: 1; }
+@media (max-width: 640px) {
+  .viewer[open] { grid-template-columns: minmax(0, 1fr); }
+  .viewer-nav { position: fixed; bottom: 1.2rem; width: 2.8rem; height: 2.8rem; }
+  .viewer-prev { left: 1rem; } .viewer-next { right: 1rem; }
+  .viewer-frame { padding: 4rem .75rem 5rem; }
+}
