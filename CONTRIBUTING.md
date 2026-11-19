@@ -125,3 +125,38 @@ The landing page is plain HTML, CSS and JavaScript in `docs/`. Replacing an imag
 | README illustrations | Update `docs/options.png` and `docs/page-sizes.png` and their descriptions in `README.md`. |
 
 Open `docs/index.html` locally, select each screenshot and recipient, and check the full-size links. On a narrow screen, confirm the logo and gallery controls fit. The repository publishes from **Settings → Pages → Deploy from a branch → main → /docs**. Its **About** website points to [the public landing page](https://fz-labz.github.io/pdf-watermark/).
+
+## Command line options
+
+Run `python batch_watermark.py --help` for usage, or `python examples/make_sample.py` to make a practice document. Watermark text supports `{date}`, `{page}`, `{pages}` and `{file}` placeholders.
+
+| Flag | Default | What it does |
+| --- | --- | --- |
+| `--text`, `-t` | — | Watermark text. Repeat for one set of copies per text. Placeholders: `{date}` `{page}` `{pages}` `{file}`. |
+| `--company`, `-c` | — | Each name becomes `CONFIDENTIAL - <name>`. |
+| `--prefix` | `CONFIDENTIAL` | What `--company` puts before each name; `""` for the name alone. |
+| `--layout` | `diagonal` | `diagonal`, `tile`, or `position` for a small stamp. |
+| `--position` | `bottom-center` | Where a stamp goes: `top-left` … `bottom-right`, `center`, or `X,Y` fractions like `0.8,0.1`. |
+| `--stack` | off | Put the name on its own line under the prefix. |
+| `--font` | `Helvetica` | `Helvetica`, `Times`, `Courier`, or any installed font such as `"Georgia"`. |
+| `--bold` / `--no-bold`, `--italic` | bold | Font style. |
+| `--color` | grey | A name (`red`, `blue`, `black`, `green`, `grey`) or a hex code like `#cc0000`. |
+| `--opacity` | `0.4` | `0` invisible, `1` fully opaque. |
+| `--size` | `100` | Percent of the automatic size (up to 400 for stamps). |
+| `--angle` | `diagonal` | Degrees, or `diagonal` for corner to corner on every page. |
+| `--tile N` | — | Shorthand for `--layout tile` with N bands. |
+| `--outline` | off | Hollow letters. |
+| `--flatten [DPI]` | off | Turn pages into images so the mark can't be removed. |
+| `--out`, `-o` | next to each source | Where output is written. |
+| `--suffix` | `_Watermarked` | Appended to each output folder name. |
+| `--dry-run` | off | Print what would be written, write nothing. |
+
+The exit code is `0` when every file succeeded and `1` if any failed, so it can sit in a script.
+
+## Roadmap
+
+- macOS desktop app
+- Code-signed Windows builds
+- Image and logo watermarks
+- Password entry for protected PDFs
+- Parallel exports
