@@ -52,7 +52,7 @@ pdf-watermark
 │   └── icon.png / .ico / .icns
 ├── .github/workflows
 │   ├── ci.yml              # tests on every push
-│   └── release.yml         # builds and publishes the app on a version tag
+│   └── release.yml         # releases the app when a merge to main changes it
 ├── requirements.txt
 ├── requirements-dev.txt
 ├── VERSION
@@ -107,9 +107,13 @@ pdf-watermark
 pyinstaller packaging/pdf-watermark.spec --noconfirm
 ```
 
-To release a new version, update and commit `VERSION`, then push a matching
-version tag. The [release workflow](.github/workflows/release.yml) runs the tests,
-builds `PDF-Watermark-Windows.exe`, and publishes it with a SHA-256 checksum.
+Releases are automatic. When a pull request that changes the app (the top-level
+Python files, `ui/`, `packaging/`, `requirements.txt` or `VERSION`) is merged
+into `main`, the [release workflow](.github/workflows/release.yml) runs the
+tests, builds and installs the app with Velopack, tags the commit with the next
+patch version and publishes it. Installed copies then offer the update. Raise
+`VERSION` in the pull request (for example to `1.3.0`) for a bigger step than a
+patch. Website, README and test-only changes don't make a release.
 
 ## Update the website images and branding
 
