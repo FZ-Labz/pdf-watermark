@@ -39,7 +39,7 @@ The same engine also runs as a command-line tool (`batch_watermark.py`), so it c
 - **Window:** [pywebview](https://pywebview.flowrl.com/). The interface is plain HTML, CSS and JavaScript in `ui/`, shown in a native window. `app.py` is the bridge between the page and Python.
 - **Packaging:** [PyInstaller](https://pyinstaller.org/), using `packaging/pdf-watermark.spec`.
 - **Installer and updates:** [Velopack](https://velopack.io/), from version 1.2.0. The release build packs the app with Velopack's `vpk` tool, which needs the .NET 8 SDK. GitHub Actions installs it for releases, and it's also installed on Fahim's PC for local builds.
-- **CI:** GitHub Actions. `ci.yml` runs the linter and tests on every push and pull request. `release.yml` builds and publishes a release when a version tag is pushed.
+- **CI:** GitHub Actions. `ci.yml` runs the linter and tests on every push and pull request. `release.yml` builds and publishes a new release by itself whenever a merge into `main` changes the app.
 
 ## The files that matter
 
@@ -56,7 +56,7 @@ The same engine also runs as a command-line tool (`batch_watermark.py`), so it c
 | `docs/` | The website, plus screenshots and images used by the README. |
 | `examples/make_sample.py` | Makes a practice PDF. |
 | `next-steps/microsoft-store.md` | A checklist for publishing to the Microsoft Store. Not started. |
-| `VERSION` | The current version number. Releases check that the tag matches it. |
+| `VERSION` | The lowest version the next release can have. Releases normally just add one to the patch number; raise this to `1.3.0` or `2.0.0` for a bigger step. |
 | `CONTRIBUTING.md` | More detail on the code, the command-line options and the website images. |
 
 Fahim's local copy also has some untracked files (`desktop_app.py`, `desktop_core.py`, `preview_worker.py`, `presets.py`, `test_desktop.py`, `build_exe.py` and others). These are an old PySide6 prototype from September 2026 and aren't used. They are not in the repository.
@@ -113,23 +113,18 @@ You don't need to build locally to release. GitHub Actions does the release buil
 
 ## Release a new version
 
-1. Open a pull request that updates `VERSION`, for example to `1.2.1`, and get it merged.
-2. Tag the merged commit on `main` and push the tag:
+There's nothing extra to do. Merging a pull request that changes the app into `main` releases it. "The app" means the Python files in the top folder, `ui/`, `packaging/`, `requirements.txt` and `VERSION`. Changes only to the website (`docs/`), the README, these notes or the tests don't make a release.
 
-   ```sh
-   git checkout main
-   git pull
-   git tag v1.2.1
-   git push origin v1.2.1
-   ```
-
-3. The **Release** workflow starts on its own. It:
+1. Merge the pull request.
+2. The **Release** workflow starts on its own. It:
    - runs the tests
-   - checks the tag matches `VERSION`
+   - picks the version: the newest release with one added to the patch number (1.2.0 becomes 1.2.1), or `VERSION` if that's higher. For a bigger step, raise `VERSION` to `1.3.0` or `2.0.0` in the pull request.
    - builds the app with PyInstaller and packs it with Velopack
    - installs it with the real `PDF-Watermark-Setup.exe`, as a user would, and opens the installed app in self-test mode. If it doesn't install or its window doesn't come up working, nothing is published.
-   - publishes the GitHub Release
-4. Check the Actions tab on GitHub until it goes green, then check the Releases page.
+   - tags the merged commit (for example `v1.2.1`) and publishes the GitHub Release
+3. Check the Actions tab on GitHub until it goes green, then check the Releases page. Everyone with the app installed sees the new version the next time they open it.
+
+To release without an app change, open the **Release** workflow on the Actions tab and click **Run workflow** on `main`. Pushing a tag such as `v1.4.0` also still releases that exact version.
 
 What each release contains:
 

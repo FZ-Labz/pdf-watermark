@@ -1,11 +1,18 @@
 name: Release
 
-# Push a version tag and this builds the Windows app, packs it with Velopack
-# (an installer plus update packages) and publishes it on the repository's
-# Releases page, where installed copies find their updates:
+# Builds the Windows app, packs it with Velopack (an installer plus update
+# packages) and publishes it on the repository's Releases page, where
+# installed copies find their updates and offer them with "Update now".
 #
-#     echo 1.1.0 > VERSION && git commit -am "Release 1.1.0"
-#     git tag v1.1.0 && git push --follow-tags
+# It runs by itself whenever a merge into main changes the app (the paths
+# below). Website, README, docs and test-only changes don't ship an update.
+# The version is the newest vX.Y.Z tag with the patch number raised by one
+# (1.2.0 -> 1.2.1), unless VERSION says something higher: raise VERSION to
+# 1.3.0 or 2.0.0 in a pull request for a bigger step. The workflow tags the
+# merged commit itself, so there is nothing to tag by hand.
+#
+# Pushing a tag such as v1.4.0 still releases that exact version, and
+# "Run workflow" on the Actions tab releases main as the next version.
 #
 # The build is not code-signed, so Windows SmartScreen asks once before the
 # first launch; the README walks people through it.
@@ -15,11 +22,24 @@ name: Release
 # packs it with hdiutil into a .dmg.
 on:
   push:
+    branches: [main]
+    # GitHub ignores these for tag pushes, so a pushed tag always releases.
+    paths:
+      - "*.py"
+      - "ui/**"
+      - "packaging/**"
+      - "requirements.txt"
+      - "VERSION"
     tags: ["v[0-9]*"]
   workflow_dispatch:
 
 permissions:
   contents: read
+
+# One release at a time, so two quick merges can't both claim the same number.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 env:
   # Keep in step with the velopack package in requirements.txt.
@@ -44,6 +64,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # every tag, to work out the next version
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -52,14 +74,24 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
-      - name: Check the tag matches VERSION
-        if: startsWith(github.ref, 'refs/tags/')
+      # Writes the version into VERSION for the rest of the build (the file is
+      # not committed back; the tag records it).
+      - name: Work out the version
+        id: version
         shell: bash
         run: |
-          if [ "v$(cat VERSION)" != "$GITHUB_REF_NAME" ]; then
-            echo "Tag $GITHUB_REF_NAME does not match VERSION ($(cat VERSION))" >&2
-            exit 1
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            V="${GITHUB_REF_NAME#v}"
+          else
+            LAST=$(git tag -l 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sed 's/^v//' | sort -V | tail -1)
+            IFS=. read -r MAJOR MINOR PATCH <<< "${LAST:-0.0.0}"
+            NEXT="$MAJOR.$MINOR.$((PATCH + 1))"
+            FLOOR=$(tr -d '[:space:]' < VERSION)
+            V=$(printf '%s\n%s\n' "$NEXT" "$FLOOR" | sort -V | tail -1)
+            echo "Last release ${LAST:-none}, VERSION $FLOOR -> releasing $V"
           fi
+          echo "$V" > VERSION
+          echo "version=$V" >> "$GITHUB_OUTPUT"
 
       - name: Stamp the version into the Windows file properties
         shell: bash
@@ -111,11 +143,20 @@ jobs:
           path: releases/
           if-no-files-found: error
 
+      # A tag pushed by this workflow's own token doesn't start another run.
+      - name: Tag the release
+        if: startsWith(github.ref, 'refs/heads/main')
+        shell: bash
+        run: |
+          git tag "v${{ steps.version.outputs.version }}" "$GITHUB_SHA"
+          git push origin "v${{ steps.version.outputs.version }}"
+
       - name: Publish the release
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: v${{ steps.version.outputs.version }}
         run: |
           cat > notes.md <<'NOTES'
           **Download** `PDF-Watermark-Setup.exe` below and double-click it. It installs in a few seconds, with no admin rights, and adds the app to the Start menu. After that the app updates itself: when a new version is out it offers to install it.
@@ -126,8 +167,8 @@ jobs:
           Built by GitHub Actions directly from this repository. See the [privacy policy](https://github.com/FZ-Labz/pdf-watermark#-privacy-and-uninstalling).
           NOTES
           vpk upload github --repoUrl "https://github.com/${{ github.repository }}" --token "$GH_TOKEN" \
-            --outputDir releases --publish --tag "$GITHUB_REF_NAME" \
-            --releaseName "PDF Watermark $GITHUB_REF_NAME"
-          gh release edit "$GITHUB_REF_NAME" --notes-file notes.md
-          gh release delete-asset "$GITHUB_REF_NAME" "$PACK_ID-win-Setup.exe" --yes
-          gh release upload "$GITHUB_REF_NAME" releases/PDF-Watermark-Setup.exe
+            --outputDir releases --publish --tag "$TAG" \
+            --releaseName "PDF Watermark $TAG"
+          gh release edit "$TAG" --notes-file notes.md
+          gh release delete-asset "$TAG" "$PACK_ID-win-Setup.exe" --yes
+          gh release upload "$TAG" releases/PDF-Watermark-Setup.exe
