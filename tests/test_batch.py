@@ -12,10 +12,11 @@ from conftest import ROOT, make_page, save
 import batch_watermark as bw
 
 
-def pdf(path: Path) -> Path:
-    doc = pymupdf.open()
-    make_page(doc)
-    return save(doc, path)
+def pdf(path: Path, pages=1) -> Path:
+    with pymupdf.open() as doc:
+        for number in range(1, pages + 1):
+            make_page(doc, label=f"{path.stem} source page {number}")
+        return save(doc, path)
 
 
 @pytest.fixture
@@ -23,7 +24,7 @@ def pack(tmp_path):
     root = tmp_path / "Tender pack"
     pdf(root / "Cover.pdf")
     pdf(root / "UPPER.PDF")
-    pdf(root / "drawings" / "Plan.pdf")
+    pdf(root / "drawings" / "Plan.pdf", pages=3)
     (root / "notes.docx").write_text("not a pdf")
     (root / "._Cover.pdf").write_bytes(b"\x00\x05\x16\x07 AppleDouble")
     (root / ".DS_Store").write_bytes(b"\x00")
@@ -84,23 +85,41 @@ def run_cli(*args, cwd):
                           cwd=cwd, capture_output=True, env=env, timeout=120)
 
 
-def test_cli_end_to_end_with_several_recipients(pack, tmp_path):
-    result = run_cli(str(pack), "--company", "Łukasz Wójcik", "株式会社", cwd=tmp_path)
+def test_cli_end_to_end_with_several_recipients(pack, tmp_path, review_image):
+    recipients = ("Łukasz Wójcik", "株式会社")
+    sources = (Path("Cover.pdf"), Path("UPPER.PDF"), Path("drawings/Plan.pdf"))
+    original_bytes = {source: (pack / source).read_bytes() for source in sources}
+    output = tmp_path / "issued"
+    result = run_cli(str(pack), "--company", *recipients, "--out", str(output), cwd=tmp_path)
     assert result.returncode == 0, result.stdout.decode(errors="replace") + result.stderr.decode(errors="replace")
-    outputs = sorted(p.relative_to(tmp_path).as_posix() for p in tmp_path.rglob("*_watermarked.pdf")
-                     if "old _X" not in p.as_posix())
-    assert len(outputs) == 6
-    assert any("CONFIDENTIAL - Łukasz Wójcik_Watermarked/drawings/Plan_watermarked.pdf" in o for o in outputs)
-    text = pymupdf.open(next(tmp_path.rglob("Tender pack _CONFIDENTIAL - 株式会社_Watermarked/Cover_watermarked.pdf")))[0].get_text()
-    assert "CONFIDENTIAL - 株式会社" in text
+    expected = {
+        output / f"Tender pack _CONFIDENTIAL - {recipient}_Watermarked" / source.parent
+        / f"{source.stem}_watermarked.pdf": (source, recipient)
+        for source in sources
+        for recipient in recipients
+    }
+    assert {p for p in output.rglob("*") if p.is_file()} == expected.keys()
+    for path, (source, recipient) in expected.items():
+        with pymupdf.open(pack / source) as original, pymupdf.open(path) as copy:
+            assert copy.page_count == original.page_count, path
+            for page in copy:
+                text = page.get_text()
+                context = f"{path.relative_to(output)}, page {page.number + 1}"
+                review_image(f"{recipient} - {source.stem} - page {page.number + 1}", page)
+                assert f"{source.stem} source page {page.number + 1}" in text, context
+                assert f"CONFIDENTIAL - {recipient}" in text, context
+                assert all(other not in text for other in recipients if other != recipient), context
+    assert {source: (pack / source).read_bytes() for source in sources} == original_bytes
 
 
 def test_cli_dry_run_writes_nothing(pack, tmp_path):
-    before = set(tmp_path.rglob("*"))
+    before = {p: p.read_bytes() for p in pack.rglob("*") if p.is_file()}
+    paths_before = set(tmp_path.rglob("*"))
     result = run_cli(str(pack), "--text", "DRAFT", "--dry-run", cwd=tmp_path)
     assert result.returncode == 0
     assert b"Dry run complete" in result.stdout
-    assert set(tmp_path.rglob("*")) == before
+    assert set(tmp_path.rglob("*")) == paths_before
+    assert {p: p.read_bytes() for p in before} == before
 
 
 def test_cli_reports_bad_files_and_carries_on(pack, tmp_path):
@@ -135,15 +154,26 @@ def test_cli_position_and_font_flags(pack, tmp_path):
     assert result.returncode == 2 and b"no font called" in result.stderr
 
 
-def test_companies_whose_names_slug_alike_never_share_an_output(tmp_path):
+def test_companies_whose_names_slug_alike_never_share_an_output(tmp_path, review_image):
     """'A/B' and 'A:B' both slug to 'A-B'; one must not overwrite the other."""
     docs = tmp_path / "Docs"
     pdf(docs / "x.pdf")
     single = pdf(tmp_path / "report.pdf")
-    folder_pdfs = {docs: bw.find_pdfs(docs, bw.FOLDER_SUFFIX)}
-    taken: set[str] = set()
-    jobs = [job for text in ("CONFIDENTIAL - A/B", "CONFIDENTIAL - A:B")
-            for job in bw.build_jobs(text, folder_pdfs, [single], None, bw.FOLDER_SUFFIX,
-                                     True, taken=taken)]
-    destinations = [str(j[1]).casefold() for j in jobs]
-    assert len(destinations) == len(set(destinations)) == 4
+    output = tmp_path / "issued"
+    result = run_cli(str(docs), str(single), "--company", "A/B", "A:B", "--out", str(output), cwd=tmp_path)
+    assert result.returncode == 0, result.stdout.decode(errors="replace") + result.stderr.decode(errors="replace")
+    contents = {"x": [], "report": []}
+    for number, path in enumerate(sorted(output.rglob("*.pdf")), start=1):
+        with pymupdf.open(path) as copy:
+            assert copy.page_count == 1, path
+            text = copy[0].get_text()
+            matching_sources = [name for name in contents if f"{name} source page 1" in text]
+            matching_recipients = [name for name in ("A/B", "A:B") if f"CONFIDENTIAL - {name}" in text]
+            assert len(matching_sources) == len(matching_recipients) == 1, (path, text)
+            source, = matching_sources
+            recipient, = matching_recipients
+            review_image(f"{number} - {source} - {recipient}", copy[0])
+        contents[source].append(recipient)
+    assert {source: sorted(names) for source, names in contents.items()} == {
+        "x": ["A/B", "A:B"], "report": ["A/B", "A:B"],
+    }

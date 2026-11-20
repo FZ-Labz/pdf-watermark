@@ -3,6 +3,7 @@ Shared helpers. Every test PDF is generated on the fly - no documents are
 committed to the repository.
 """
 
+import re
 import sys
 from pathlib import Path
 
@@ -14,6 +15,29 @@ sys.path.insert(0, str(ROOT))
 
 A4 = (595, 842)
 A3 = (842, 1191)
+
+
+def pytest_addoption(parser):
+    parser.addoption("--review-images", type=Path, metavar="DIR",
+                     help="Save PNGs from visual test cases for manual review")
+
+
+@pytest.fixture
+def review_image(request):
+    folder = request.config.getoption("--review-images")
+    if folder is None:
+        return lambda label, image: None
+
+    def save_image(label: str, image: pymupdf.Page | pymupdf.Pixmap) -> None:
+        name = re.sub(r"[^\w-]+", "-", label).strip("-")
+        directory = folder / request.node.originalname
+        directory.mkdir(parents=True, exist_ok=True)
+        if isinstance(image, pymupdf.Page):
+            scale = min(1, 900 / max(image.rect.width, image.rect.height))
+            image = image.get_pixmap(matrix=pymupdf.Matrix(scale, scale), alpha=False)
+        image.save(directory / f"{name}.png")
+
+    return save_image
 
 
 def make_page(doc: pymupdf.Document, size=A4, rotation=0, crop=None, origin=(0, 0),
@@ -79,10 +103,13 @@ def red_extent_centre(page: pymupdf.Page, dpi=40):
     as centred when it is.
     """
     pix = page.get_pixmap(dpi=dpi, alpha=False)
+    data = pix.samples
     xs, ys = [], []
     for y in range(pix.height):
+        row = y * pix.stride
         for x in range(pix.width):
-            r, g, b = pix.pixel(x, y)
+            start = row + x * pix.n
+            r, g, b = data[start:start + 3]
             if r > 180 and g < 90 and b < 90:
                 xs.append(x)
                 ys.append(y)
