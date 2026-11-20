@@ -101,7 +101,7 @@ jobs:
           $app = "$env:LOCALAPPDATA\PDFWatermark\current\PDF Watermark.exe"
           if (-not (Test-Path $app)) { throw "The app was not installed" }
           $run = Start-Process $app -ArgumentList '--self-test','--no-update' -Wait -PassThru
-          Get-Content "$env:APPDATA\PDF Watermarkpp.log" -Tail 20
+          Get-Content "$env:APPDATA\PDF Watermark\app.log" -Tail 20
           if ($run.ExitCode -ne 0) { throw "The installed app failed its self-test" }
 
       - uses: actions/upload-artifact@v4
