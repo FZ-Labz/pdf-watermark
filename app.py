@@ -24,6 +24,7 @@ import os
 import subprocess
 import sys
 import threading
+import time
 from pathlib import Path
 
 import webview
@@ -31,6 +32,7 @@ from webview.dom import DOMEventHandler
 
 import batch_watermark as bw
 import fonts
+import updater
 import watermark as wm
 
 APP_NAME = "PDF Watermark"
@@ -318,6 +320,39 @@ class Api:
     def save_companies(self, names: list[str]) -> None:
         _write_json(companies_file(), sorted(set(names), key=str.casefold))
 
+    # ---- Updates -------------------------------------------------------
+
+    def check_update(self) -> dict | None:
+        """A newer release, if there is one - only for the installed Windows app."""
+        if not (getattr(sys, "frozen", False) and sys.platform == "win32") or "--no-update" in sys.argv:
+            return None
+        self._update = updater.check()
+        if not self._update:
+            return None
+        log.info("update available: %s", self._update["version"])
+        return {"version": self._update["version"], "page": self._update["page"]}
+
+    def install_update(self) -> str | None:
+        """Download the update and restart into it. Returns an error message on failure."""
+        update = getattr(self, "_update", None)
+        if not update or not self._busy.acquire(blocking=False):
+            return "Can't update right now."
+        try:
+            updater.install(update)
+        except Exception as exc:  # noqa: BLE001 - shown in the app; the installed copy still works
+            self._busy.release()
+            log.warning("update failed", exc_info=True)
+            return f"The update didn't install ({exc}). You can download it from GitHub instead."
+        log.info("updating to %s, restarting", update["version"])
+        self._window.destroy()
+        return None
+
+    def open_url(self, url: str) -> None:
+        if url.startswith("https://github.com/"):
+            import webbrowser
+
+            webbrowser.open(url)
+
     def log_js_error(self, message: str) -> None:
         log.error("ui: %s", message)
 
@@ -462,7 +497,31 @@ def use_software_rendering() -> None:
         os.environ[key] = f"{current} --disable-gpu".strip()
 
 
+SELF_TEST_JS = """
+window.appLoaded === true &&
+[...document.querySelectorAll('.view')].filter(v => getComputedStyle(v).display !== 'none').length === 1
+"""
+
+
+def self_test(window: webview.Window) -> None:
+    """
+    --self-test: open the app, check the page script ran to the end and only
+    the first step is on screen, then quit with exit code 0 (pass) or 1.
+    The release build runs this on the installed app before publishing.
+    """
+    ok = False
+    try:
+        if window.events.loaded.wait(60):
+            time.sleep(3)
+            ok = window.evaluate_js(SELF_TEST_JS) is True
+    except Exception:  # noqa: BLE001 - any failure is a failed test
+        log.exception("self-test error")
+    log.info("self-test %s", "passed" if ok else "FAILED")
+    os._exit(0 if ok else 1)
+
+
 def main() -> None:
+    updater.startup()   # first: Velopack's install/uninstall hooks exit here
     start_logging()
     log.info("start %s", sys.argv[1:])
     use_software_rendering()
@@ -483,6 +542,8 @@ def main() -> None:
     def bind(win: webview.Window) -> None:
         win.dom.document.events.drop += DOMEventHandler(lambda e: on_drop(api, e), True, True)
 
+    if "--self-test" in sys.argv:
+        threading.Thread(target=self_test, args=(window,), daemon=True).start()
     webview.start(bind, window, debug="--debug" in sys.argv)
     log.info("closed")
 

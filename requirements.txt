@@ -1,3 +1,4 @@
 pymupdf>=1.24
 fonttools>=4.40
 pywebview>=5.0
+velopack==1.2.161   # installs and updates the Windows app; keep in step with vpk in release.yml

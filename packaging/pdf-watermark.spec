@@ -3,7 +3,9 @@
 #     pip install -r requirements.txt pyinstaller
 #     pyinstaller packaging/pdf-watermark.spec --noconfirm
 #
-# Windows: dist/PDF Watermark.exe - one file, nothing to install.
+# Windows: dist/PDF Watermark/ - a folder with PDF Watermark.exe inside. The
+#          release workflow turns it into a Velopack installer and update
+#          packages (vpk pack); see updater.py.
 # macOS:   dist/PDF Watermark.app - packed into a .dmg by the release workflow.
 #
 # Run it on the platform you are building for; PyInstaller does not cross-build.
@@ -59,11 +61,15 @@ if MAC:
         },
     )
 else:
+    # A folder build, not one file: Velopack installs and updates a folder,
+    # and only ships the files that changed between versions.
     exe = EXE(  # noqa: F821
-        pyz, a.scripts, a.binaries, a.datas, [],
+        pyz, a.scripts, [],
+        exclude_binaries=True,
         name=NAME,
         console=False,
         icon=str(ROOT / "packaging" / "icon.ico"),
         version=str(ROOT / "packaging" / "version_info.txt"),
         upx=False,
     )
+    coll = COLLECT(exe, a.binaries, a.datas, name=NAME, upx=False)  # noqa: F821
