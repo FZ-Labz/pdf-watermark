@@ -37,7 +37,7 @@ foreach ($install in 1..2) {
 
 $entry = Get-ItemProperty -LiteralPath $uninstallKey
 if ($entry.DisplayName -ne 'PDF Watermark' -or $entry.Publisher -ne 'FZ-Labz') {
-    throw 'The per-user uninstall entry should display PDF Watermark published by FZ-Labz.'
+    throw "Unexpected uninstall entry: '$($entry.DisplayName)' published by '$($entry.Publisher)'."
 }
 $version = (Get-Content -LiteralPath (Join-Path $PSScriptRoot '..\VERSION') -Raw).Trim()
 if ($entry.DisplayVersion -ne $version) { throw 'The uninstall entry should display the release version.' }

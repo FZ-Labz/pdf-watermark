@@ -15,6 +15,7 @@ DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 MinVersion=10.0
 ArchitecturesAllowed=x64compatible
+UninstallDisplayName={#AppName}
 UninstallDisplayIcon={app}\{#AppExe}
 SetupIconFile=icon.ico
 OutputDir=..\dist
