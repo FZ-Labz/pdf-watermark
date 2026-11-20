@@ -4,7 +4,10 @@
 
 Set up your watermark once and apply it to every page, including PDFs in subfolders. The app saves new copies with the same folder structure and keeps your originals intact. Everything runs offline on your Windows PC.
 
-**[Download for Windows](https://github.com/FZ-Labz/pdf-watermark/releases/latest/download/PDF-Watermark-Windows.exe)** · Windows 10 and 11 · Free · Portable
+**Windows 10 and 11** · Free
+
+- **Installer** · Open the [latest release](https://github.com/FZ-Labz/pdf-watermark/releases/latest) and choose `PDF-Watermark-Setup.exe` when available. Setup installs for your Windows account and adds a Start menu shortcut.
+- **[Portable download](https://github.com/FZ-Labz/pdf-watermark/releases/latest/download/PDF-Watermark-Windows.exe)** · Open the executable directly.
 
 ![The Design screen shows watermark settings beside a preview of a marked drawing](docs/screenshots/design.png)
 
@@ -18,11 +21,13 @@ Sending a pack to several people? Add each name under **Recipients** to export a
 
 ## 🔏 Code signing policy
 
-The portable executable is built by GitHub Actions from this repository. The current release is unsigned, so Windows SmartScreen may flag it. The [latest release](https://github.com/FZ-Labz/pdf-watermark/releases/latest) includes the published [SHA-256 checksums](https://github.com/FZ-Labz/pdf-watermark/releases/latest/download/SHA256SUMS.txt).
+GitHub Actions builds the Windows downloads from this repository. Windows SmartScreen may flag the unsigned downloads. Compare your download with the [published SHA-256 checksums](https://github.com/FZ-Labz/pdf-watermark/releases/latest/download/SHA256SUMS.txt).
 
 ## 🔒 Privacy and uninstalling
 
-Documents are processed locally. The app stores its settings in `%APPDATA%\PDF Watermark`. To uninstall it, delete the executable. You can also delete the settings folder.
+Uninstall the installed app from **Settings → Apps** or **Control Panel → Programs and Features** by selecting **PDF Watermark**. To remove the portable copy, delete its executable.
+
+Documents are processed locally. Uninstalling keeps your PDFs and the app settings in `%APPDATA%\PDF Watermark`. You can delete the settings folder separately to reset the app.
 
 ## Help
 

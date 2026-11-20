@@ -109,7 +109,18 @@ pyinstaller packaging/pdf-watermark.spec --noconfirm
 
 To release a new version, update and commit `VERSION`, then push a matching
 version tag. The [release workflow](.github/workflows/release.yml) runs the tests,
-builds `PDF-Watermark-Windows.exe`, and publishes it with a SHA-256 checksum.
+builds `PDF-Watermark-Windows.exe` and `PDF-Watermark-Setup.exe`, and publishes
+both with SHA-256 checksums. Dispatch the workflow against a branch to test and
+download the builds without publishing a release.
+
+To compile the installer locally on Windows after building the PyInstaller app,
+use [Inno Setup](https://jrsoftware.org/isinfo.php) 6.3 or later. From the repository
+root, run this in PowerShell:
+
+```powershell
+$version = (Get-Content VERSION -Raw).Trim()
+& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DAppVersion=$version" packaging\pdf-watermark.iss
+```
 
 ## Update the website images and branding
 

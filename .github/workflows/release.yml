@@ -6,8 +6,7 @@ name: Release
 #     echo 1.1.0 > VERSION && git commit -am "Release 1.1.0"
 #     git tag v1.1.0 && git push --follow-tags
 #
-# The build is not code-signed, so Windows SmartScreen asks once before the
-# first launch; the README walks people through it.
+# The Windows downloads are unsigned, so SmartScreen may flag them.
 #
 # macOS is on hold for now. The PyInstaller spec already builds a .app on a
 # Mac; to bring it back, add a macos-latest entry to the matrix below with a
@@ -67,6 +66,19 @@ jobs:
       - run: pip install -r requirements.txt "pyinstaller>=6.5"
       - run: pyinstaller packaging/pdf-watermark.spec --noconfirm
 
+      - name: Build the Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $version = (Get-Content VERSION -Raw).Trim()
+          $compiler = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          & $compiler "/DAppVersion=$version" 'packaging\pdf-watermark.iss'
+
+      - name: Verify Windows install and uninstall
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./packaging/test-installer.ps1
+
       - name: Package (Windows)
         if: runner.os == 'Windows'
         shell: bash
@@ -75,7 +87,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.asset }}
-          path: dist/${{ matrix.asset }}
+          path: |
+            dist/${{ matrix.asset }}
+            dist/PDF-Watermark-Setup.exe
           if-no-files-found: error
 
   publish:
@@ -96,9 +110,11 @@ jobs:
         run: |
           cd assets && sha256sum * > SHA256SUMS.txt && cd ..
           cat > notes.md <<'NOTES'
-          **Download** the file for your computer below:
+          Choose a Windows 10 or 11 download from the release assets:
 
-          - **Windows** - `PDF-Watermark-Windows.exe`. Double-click to run; nothing to install. The first time, Windows may show *"Windows protected your PC"*: click **More info**, then **Run anyway**.
-          Built by GitHub Actions directly from this repository. See the [code signing policy](https://github.com/FZ-Labz/pdf-watermark#-code-signing-policy) and [privacy policy](https://github.com/FZ-Labz/pdf-watermark#-privacy-and-uninstalling).
+          - **Installer** `PDF-Watermark-Setup.exe`. Installs for your Windows account, adds a Start menu shortcut, and registers **PDF Watermark** in Settings → Apps and Control Panel → Programs and Features.
+          - **Portable** `PDF-Watermark-Windows.exe`. Open the file directly and delete it when you no longer need it.
+
+          GitHub Actions built both downloads from this repository. Windows SmartScreen may flag the unsigned files. See `SHA256SUMS.txt` in the assets for checksums and the [README](https://github.com/FZ-Labz/pdf-watermark#-privacy-and-uninstalling) for uninstall and settings details.
           NOTES
           gh release create "$GITHUB_REF_NAME" assets/* --title "PDF Watermark $GITHUB_REF_NAME" --notes-file notes.md --verify-tag
