@@ -18,6 +18,7 @@
   <header class="topbar">
     <div class="topbar-side lockup">
       <span class="lockup-name">PDF Watermark</span>
+      <span class="lockup-version" id="appVersion"></span>
     </div>
 
     <nav class="steps" id="steps" aria-label="Steps">
@@ -306,15 +307,6 @@
       <span id="noticeText"></span>
     </div>
 
-    <div class="notice update" id="update" hidden>
-      <svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
-      <span id="updateText"></span>
-      <span class="notice-actions">
-        <button class="btn btn-ghost" id="updateLater">Later</button>
-        <button class="btn btn-accent" id="updateNow">Update now</button>
-      </span>
-    </div>
-
     <footer class="card-foot">
       <!-- Says why Continue is unavailable, so a greyed-out button is never a dead end. -->
       <p class="foot-hint" id="nextHint" aria-live="polite"></p>
@@ -337,6 +329,29 @@
     <div class="shortcut-list" id="shortcutList"></div>
   </div>
 </div>
+
+<!-- Update card: floats in the top-right corner over every step. app.js
+     (Updates) switches it between "available", "updating", "failed" and
+     "updated" (shown once after a restart into a new version). -->
+<aside class="toast" id="update" data-mode="available" role="status" aria-live="polite" hidden>
+  <div class="toast-icon" aria-hidden="true">
+    <svg class="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+    <svg class="i-done" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+    <svg class="i-warn" viewBox="0 0 24 24"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/></svg>
+  </div>
+  <div class="toast-body">
+    <p class="toast-title" id="updateTitle"></p>
+    <p class="toast-text" id="updateText"></p>
+    <div class="toast-progress" aria-hidden="true"><span></span></div>
+    <div class="toast-actions">
+      <button class="btn btn-ghost" id="updateLater">Later</button>
+      <button class="btn btn-accent" id="updateNow">Update now</button>
+    </div>
+  </div>
+  <button class="toast-close" id="updateClose" aria-label="Dismiss">
+    <svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7 7 17"/></svg>
+  </button>
+</aside>
 
 <script src="app.js"></script>
 </body>

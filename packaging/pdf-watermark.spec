@@ -21,7 +21,8 @@ MAC = sys.platform == "darwin"
 a = Analysis(  # noqa: F821
     [str(ROOT / "app.py")],
     pathex=[str(ROOT)],
-    datas=[(str(ROOT / "ui"), "ui")],
+    # VERSION goes in too: the app shows it and compares it with new releases.
+    datas=[(str(ROOT / "ui"), "ui"), (str(ROOT / "VERSION"), ".")],
     # fontTools loads its table and subsetting modules lazily, by name.
     hiddenimports=["fontTools.subset", "fontTools.ttLib.tables", "fontTools.ttLib.ttCollection"],
     excludes=["tkinter", "test", "unittest", "pytest"],

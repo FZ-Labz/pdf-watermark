@@ -152,12 +152,41 @@ def open_in_file_manager(path: str) -> None:
         subprocess.Popen(["xdg-open", path])
 
 
+def note_version() -> str | None:
+    """
+    Remember which version last ran here, and return the previous one if this
+    copy is newer - so the first start after an update can say it worked.
+    Only the installed app keeps track; running from source never does.
+    """
+    if not getattr(sys, "frozen", False):
+        return None
+    current = updater.current_version()
+    path = data_dir() / "version.txt"
+    try:
+        previous = path.read_text(encoding="utf-8").strip()
+    except OSError:
+        previous = ""
+    if previous != current:
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(current, encoding="utf-8")
+        except OSError:
+            pass
+    if previous and updater.version_key(previous) < updater.version_key(current):
+        log.info("updated from %s to %s", previous, current)
+        return previous
+    return None
+
+
 class Api:
     def __init__(self, initial: list[str]):
         self._initial = initial
         self._cancel = threading.Event()
         self._busy = threading.Lock()
         self._window: webview.Window | None = None
+        self._update: dict | None = None
+        self._announced: str | None = None
+        self._updated_from = note_version()
 
     # ---- Files ---------------------------------------------------------
 
@@ -322,27 +351,46 @@ class Api:
 
     # ---- Updates -------------------------------------------------------
 
+    def app_info(self) -> dict:
+        """
+        This copy's version, the version it was updated from (once, on the
+        first start after an update) and how often the page should look for
+        a newer one.
+        """
+        return {"version": updater.current_version(), "updated_from": self._updated_from,
+                "check_every": updater.CHECK_EVERY if self._can_update() else 0}
+
+    @staticmethod
+    def _can_update() -> bool:
+        """Only the installed Windows app updates itself."""
+        return getattr(sys, "frozen", False) and sys.platform == "win32" and "--no-update" not in sys.argv
+
     def check_update(self) -> dict | None:
-        """A newer release, if there is one - only for the installed Windows app."""
-        if not (getattr(sys, "frozen", False) and sys.platform == "win32") or "--no-update" in sys.argv:
+        """A newer release, if there is one. The page calls this at start and every few minutes."""
+        if not self._can_update():
             return None
-        self._update = updater.check()
-        if not self._update:
+        found = updater.check()
+        if not found:
             return None
-        log.info("update available: %s", self._update["version"])
-        return {"version": self._update["version"], "page": self._update["page"]}
+        self._update = found
+        if found["version"] != self._announced:   # logged once, not on every check
+            self._announced = found["version"]
+            log.info("update available: %s", found["version"])
+        return {"version": found["version"], "page": found["page"]}
 
     def install_update(self) -> str | None:
         """Download the update and restart into it. Returns an error message on failure."""
-        update = getattr(self, "_update", None)
-        if not update or not self._busy.acquire(blocking=False):
+        update = self._update
+        if not update:
             return "Can't update right now."
+        if not self._busy.acquire(blocking=False):
+            return "Your copies are still being made. Update once they're done."
         try:
             updater.install(update)
         except Exception as exc:  # noqa: BLE001 - shown in the app; the installed copy still works
             self._busy.release()
             log.warning("update failed", exc_info=True)
-            return f"The update didn't install ({exc}). You can download it from GitHub instead."
+            return f"Something went wrong ({exc}). Your current version still works, or download the new one from GitHub."
         log.info("updating to %s, restarting", update["version"])
         self._window.destroy()
         return None
@@ -523,7 +571,7 @@ def self_test(window: webview.Window) -> None:
 def main() -> None:
     updater.startup()   # first: Velopack's install/uninstall hooks exit here
     start_logging()
-    log.info("start %s", sys.argv[1:])
+    log.info("start %s, version %s", sys.argv[1:], updater.current_version())
     use_software_rendering()
     initial = [a for a in sys.argv[1:] if not a.startswith("-")]
     api = Api(initial)

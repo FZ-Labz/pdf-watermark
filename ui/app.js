@@ -103,8 +103,12 @@ const mockApi = {
   async load_companies() { try { return JSON.parse(localStorage.getItem("companies") || "[]"); } catch { return []; } },
   async save_companies(names) { try { localStorage.setItem("companies", JSON.stringify(names)); } catch { /* preview only */ } },
   async log_js_error() {},
+  async app_info() { return { version: "1.8.1", updated_from: null, check_every: 0 }; },
   async check_update() { return null; },
-  async install_update() { return "Updates only work in the installed app."; },
+  async install_update() {
+    await new Promise(r => setTimeout(r, 2500));
+    return "Updates only work in the installed app.";
+  },
   async open_url() {},
 };
 let mockCancelled = false;
@@ -128,32 +132,92 @@ window.addEventListener("pywebviewready", async () => {
   state.companies = await api.load_companies();
   const initial = await api.initial_sources();
   if (initial.length) addSources(initial); else render();
-  checkForUpdate();
+  startUpdates();
 });
 
-/* ---- Updates ------------------------------------------------------------- */
+/* ---- Updates -------------------------------------------------------------
+   The installed app looks for a newer release when it opens and then every
+   couple of minutes (app_info says how often; 0 when this copy can't update
+   itself). A new version shows the card in the top-right corner, whichever
+   step is open. "Later" puts that version away for this session; a newer one
+   still shows. After a restart into a new version the card says so once. */
 
-let update = null;
-async function checkForUpdate() {
-  update = await api.check_update();
-  if (!update) return;
-  $("#updateText").textContent = `Version ${update.version} is available.`;
-  $("#update").hidden = false;
+let update = null;        // the version on offer
+let dismissed = null;     // the version "Later" was clicked for
+let updating = false;
+let cardTimer = 0;
+
+async function startUpdates() {
+  const info = await api.app_info();
+  $("#appVersion").textContent = `Version ${info.version}`;
+  if (info.updated_from) showCard("updated", { version: info.version });
+  if (!info.check_every) return;
+  checkForUpdate();
+  setInterval(checkForUpdate, info.check_every * 1000);
 }
+
+async function checkForUpdate() {
+  if (updating) return;
+  const found = await api.check_update();
+  if (!found || found.version === dismissed) return;
+  const card = $("#update");
+  if (update && update.version === found.version && !card.hidden) return;   // already showing
+  update = found;
+  showCard("available");
+}
+
+const CARD_TEXT = {
+  available: () => ["Update available", `Version ${update.version} is ready to install. The app restarts by itself.`],
+  updating: () => ["Updating…", `Downloading version ${update.version}. The app will restart by itself.`],
+  updated: ({ version }) => ["PDF Watermark is up to date", `You're now on version ${version}.`],
+  failed: ({ error }) => ["Update not installed", error],
+};
+
+function showCard(mode, detail = {}) {
+  const card = $("#update");
+  clearTimeout(cardTimer);
+  const [title, text] = CARD_TEXT[mode](detail);
+  card.dataset.mode = mode;
+  $("#updateTitle").textContent = title;
+  $("#updateText").textContent = text;
+  const now = $("#updateNow");
+  now.textContent = mode === "failed" ? "Open download page" : "Update now";
+  now.disabled = $("#updateLater").disabled = false;
+  if (card.hidden || card.classList.contains("leaving")) {
+    card.classList.remove("leaving");
+    card.hidden = false;
+    card.style.animation = "none"; void card.offsetWidth; card.style.animation = "";   // replay the entrance
+  }
+  if (mode === "updated") cardTimer = setTimeout(hideCard, 8000);
+}
+
+function hideCard() {
+  const card = $("#update");
+  if (card.hidden) return;
+  clearTimeout(cardTimer);
+  card.classList.add("leaving");
+  card.addEventListener("animationend", () => {
+    if (card.classList.contains("leaving")) { card.hidden = true; card.classList.remove("leaving"); }
+  }, { once: true });
+}
+
+function putAway() {
+  if (update && $("#update").dataset.mode !== "updated") dismissed = update.version;
+  hideCard();
+}
+
 // Bound when the page is ready: $ is defined further down this file.
 window.addEventListener("DOMContentLoaded", () => {
-$("#updateLater").addEventListener("click", () => { $("#update").hidden = true; });
-$("#updateNow").addEventListener("click", async e => {
-  const btn = e.currentTarget;
-  if (btn.dataset.page) { api.open_url(btn.dataset.page); return; }
-  btn.disabled = true; $("#updateLater").disabled = true;
-  btn.textContent = "Updating…";
-  $("#updateText").textContent = `Downloading version ${update.version}. The app will restart by itself.`;
+$("#updateLater").addEventListener("click", putAway);
+$("#updateClose").addEventListener("click", putAway);
+$("#updateNow").addEventListener("click", async () => {
+  if ($("#update").dataset.mode === "failed") { api.open_url(update.page); return; }
+  updating = true;
+  showCard("updating");
   const error = await api.install_update();
   if (!error) return;                       // the app is restarting
-  $("#updateText").textContent = error;
-  btn.textContent = "Open download page"; btn.dataset.page = update.page;
-  btn.disabled = false; $("#updateLater").disabled = false;
+  updating = false;
+  showCard("failed", { error });
 });
 });
 
@@ -1259,6 +1323,15 @@ api.load_companies().then(list => {
     state.step = { files: 0, design: 1, export: 2 }[demo] ?? 1;
   }
   render();
+  // ?update=available|updating|updated|failed shows the update card with
+  // sample text. Like ?demo, only ever in a plain browser.
+  const card = !inApp() && new URLSearchParams(location.search).get("update");
+  if (demo || card) startUpdates();
+  if (card) {
+    update = { version: "1.8.2", page: "https://github.com/FZ-Labz/pdf-watermark/releases/latest" };
+    showCard(card in CARD_TEXT ? card : "available",
+      { version: "1.8.1", error: "Couldn't reach GitHub. You can download it from GitHub instead." });
+  }
 });
 
 // Last line: the build's self-test checks this to know the whole script ran.

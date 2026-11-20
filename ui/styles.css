@@ -53,6 +53,7 @@ svg { display: block; }
 /* The app name remains visible when Windows hides the native title. */
 .lockup { min-width: 0; padding-left: 4px; }
 .lockup-name { color: var(--text); white-space: nowrap; font-size: 14px; font-weight: 600; }
+.lockup-version { margin-left: 8px; color: var(--faint); font-size: 12px; white-space: nowrap; }
 
 /* ---- Layout -------------------------------------------------------------- */
 .app {
@@ -582,10 +583,86 @@ body.busy .steps { pointer-events: none; }
   color: var(--muted); font-size: 13px;
 }
 .notice svg { width: 16px; height: 16px; flex: none; color: var(--warn); }
-.notice.update svg { color: var(--accent); }
-.notice-actions { display: flex; gap: 8px; margin-left: auto; flex: none; }
-.notice-actions .btn { padding: 6px 14px; font-size: 13px; }
 .done .notice { margin: 16px 0 0; text-align: left; flex-direction: column; align-items: stretch; }
+
+/* ---- Update card ----------------------------------------------------------
+   Floats in the top-right corner, below the header, over whichever step is
+   showing: frosted glass in the macOS notification style. Above the page,
+   below the shortcuts sheet (90) and tooltips (100). */
+.toast {
+  position: fixed; z-index: 80; top: 64px; right: 16px;
+  width: min(340px, calc(100vw - 32px));
+  display: grid; grid-template-columns: 36px 1fr; gap: 12px; align-items: start;
+  padding: 14px 16px 14px 14px;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.05)),
+    rgba(24, 30, 42, 0.55);
+  -webkit-backdrop-filter: blur(28px) saturate(170%);
+  backdrop-filter: blur(28px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 18px 44px rgba(0, 0, 0, 0.45),
+    0 2px 8px rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  transform-origin: top right;
+  animation: toast-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+}
+.toast.leaving { animation: toast-out 0.22s ease-in forwards; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(-10px) scale(0.96); } }
+@keyframes toast-out { to { opacity: 0; transform: translateY(-6px) scale(0.97); } }
+
+.toast-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: grid; place-items: center;
+  background: linear-gradient(180deg, var(--accent-2), var(--accent));
+  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+.toast-icon svg, .toast-close svg {
+  width: 18px; height: 18px;
+  fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;
+}
+.toast .i-done, .toast .i-warn { display: none; }
+.toast[data-mode="updated"] .i-download, .toast[data-mode="failed"] .i-download { display: none; }
+.toast[data-mode="updated"] .i-done, .toast[data-mode="failed"] .i-warn { display: block; }
+.toast[data-mode="failed"] .toast-icon {
+  background: rgba(255, 255, 255, 0.1); box-shadow: none; color: var(--warn);
+}
+
+.toast-body { min-width: 0; padding-right: 18px; }
+.toast-title { margin: 0; font-size: 14px; font-weight: 600; line-height: 1.35; }
+.toast-text { margin: 2px 0 0; font-size: 13px; color: rgba(244, 244, 245, 0.72); line-height: 1.45; overflow-wrap: anywhere; }
+.toast-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.toast-actions .btn { height: 30px; padding: 0 14px; border-radius: 8px; font-size: 13px; }
+.toast[data-mode="updating"] .toast-actions,
+.toast[data-mode="updated"] .toast-actions,
+.toast[data-mode="updating"] .toast-close { display: none; }
+
+/* An indeterminate bar while the update downloads. */
+.toast-progress {
+  display: none; height: 4px; margin-top: 12px; border-radius: 999px; overflow: hidden;
+  background: rgba(255, 255, 255, 0.12);
+}
+.toast-progress span {
+  display: block; width: 40%; height: 100%; border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  animation: toast-progress 1.2s ease-in-out infinite;
+}
+.toast[data-mode="updating"] .toast-progress { display: block; }
+@keyframes toast-progress { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+
+.toast-close {
+  position: absolute; top: 10px; right: 10px;
+  width: 24px; height: 24px; padding: 0; border: 0; border-radius: 999px;
+  display: grid; place-items: center;
+  background: transparent; color: var(--muted);
+  transition: background 0.15s, color 0.15s;
+}
+.toast-close svg { width: 14px; height: 14px; }
+.toast-close:hover { background: rgba(255, 255, 255, 0.12); color: var(--text); }
+.toast-close:focus-visible, .toast-actions .btn:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
 
 /* ---- Small windows ------------------------------------------------------- */
 @media (max-width: 860px) {
