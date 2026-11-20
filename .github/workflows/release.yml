@@ -85,10 +85,24 @@ jobs:
           vpk pack --packId "$PACK_ID" --packVersion "$(cat VERSION)" \
             --packDir "dist/PDF Watermark" --mainExe "PDF Watermark.exe" \
             --packTitle "PDF Watermark" --packAuthors "FZ Labz" \
-            --icon packaging/icon.ico --outputDir releases
+            --icon packaging/icon.ico --outputDir releases             --framework webview2
           # A friendlier name for the file people download.
           mv "releases/$PACK_ID-win-Setup.exe" releases/PDF-Watermark-Setup.exe
           ls -la releases
+
+      # Install with the real Setup.exe, as a user would, and open the
+      # installed app in self-test mode. Nothing is published unless it
+      # installs and its window comes up working.
+      - name: Install and self-test
+        shell: pwsh
+        run: |
+          $setup = Start-Process releases/PDF-Watermark-Setup.exe -ArgumentList '--silent' -Wait -PassThru
+          if ($setup.ExitCode -ne 0) { throw "Setup.exe failed with exit code $($setup.ExitCode)" }
+          $app = "$env:LOCALAPPDATA\PDFWatermark\current\PDF Watermark.exe"
+          if (-not (Test-Path $app)) { throw "The app was not installed" }
+          $run = Start-Process $app -ArgumentList '--self-test','--no-update' -Wait -PassThru
+          Get-Content "$env:APPDATA\PDF Watermarkpp.log" -Tail 20
+          if ($run.ExitCode -ne 0) { throw "The installed app failed its self-test" }
 
       - uses: actions/upload-artifact@v4
         with:

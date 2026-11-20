@@ -1260,3 +1260,6 @@ api.load_companies().then(list => {
   }
   render();
 });
+
+// Last line: the build's self-test checks this to know the whole script ran.
+window.appLoaded = true;

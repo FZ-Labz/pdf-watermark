@@ -4,7 +4,7 @@
 
 Set up your watermark once and apply it to every page, including PDFs in subfolders. The app saves new copies with the same folder structure and keeps your originals intact. Everything runs offline on your Windows PC.
 
-**[Download for Windows](https://github.com/FZ-Labz/pdf-watermark/releases/latest/download/PDF-Watermark-Windows.exe)** · Windows 10 and 11 · Free · Portable
+**[Download for Windows](https://github.com/FZ-Labz/pdf-watermark/releases/latest/download/PDF-Watermark-Setup.exe)** · Windows 10 and 11 · Free · Updates itself
 
 ![The Design screen shows watermark settings beside a preview of a marked drawing](docs/screenshots/design.png)
 
@@ -18,7 +18,7 @@ Sending a pack to several people? Add each name under **Recipients** to export a
 
 ## 🔏 Code signing policy
 
-The portable executable is built by GitHub Actions from this repository. The current release is unsigned, so Windows SmartScreen may flag it. The [latest release](https://github.com/FZ-Labz/pdf-watermark/releases/latest) includes the published [SHA-256 checksums](https://github.com/FZ-Labz/pdf-watermark/releases/latest/download/SHA256SUMS.txt).
+The installer (`PDF-Watermark-Setup.exe`) is built by GitHub Actions from this repository and packaged with [Velopack](https://velopack.io). It installs for the current user with no admin rights, adds Start menu and desktop shortcuts, and the app offers new versions itself when they come out. The current release is unsigned, so Windows may warn before the first install: in the browser choose **Keep**, then in the blue *"Windows protected your PC"* box click **More info** and **Run anyway**. Updates after that install without the warning.
 
 ## 🔒 Privacy and uninstalling
 

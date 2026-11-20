@@ -24,6 +24,7 @@ import os
 import subprocess
 import sys
 import threading
+import time
 from pathlib import Path
 
 import webview
@@ -496,6 +497,29 @@ def use_software_rendering() -> None:
         os.environ[key] = f"{current} --disable-gpu".strip()
 
 
+SELF_TEST_JS = """
+window.appLoaded === true &&
+[...document.querySelectorAll('.view')].filter(v => getComputedStyle(v).display !== 'none').length === 1
+"""
+
+
+def self_test(window: webview.Window) -> None:
+    """
+    --self-test: open the app, check the page script ran to the end and only
+    the first step is on screen, then quit with exit code 0 (pass) or 1.
+    The release build runs this on the installed app before publishing.
+    """
+    ok = False
+    try:
+        if window.events.loaded.wait(60):
+            time.sleep(3)
+            ok = window.evaluate_js(SELF_TEST_JS) is True
+    except Exception:  # noqa: BLE001 - any failure is a failed test
+        log.exception("self-test error")
+    log.info("self-test %s", "passed" if ok else "FAILED")
+    os._exit(0 if ok else 1)
+
+
 def main() -> None:
     updater.startup()   # first: Velopack's install/uninstall hooks exit here
     start_logging()
@@ -518,6 +542,8 @@ def main() -> None:
     def bind(win: webview.Window) -> None:
         win.dom.document.events.drop += DOMEventHandler(lambda e: on_drop(api, e), True, True)
 
+    if "--self-test" in sys.argv:
+        threading.Thread(target=self_test, args=(window,), daemon=True).start()
     webview.start(bind, window, debug="--debug" in sys.argv)
     log.info("closed")
 
