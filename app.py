@@ -415,7 +415,7 @@ def hide_caption(window: webview.Window) -> None:
     """
     Stop Windows drawing the icon and title text in the title bar, leaving an
     empty strip with the caption buttons that runs into the header, where the
-    INSITE DC wordmark and the app name sit instead.
+    app name sits instead.
 
     Only the drawing is skipped: the window keeps its title and icon, so the
     taskbar and Alt+Tab still name it and show the logo.
