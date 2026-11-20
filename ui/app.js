@@ -140,6 +140,8 @@ async function checkForUpdate() {
   $("#updateText").textContent = `Version ${update.version} is available.`;
   $("#update").hidden = false;
 }
+// Bound when the page is ready: $ is defined further down this file.
+window.addEventListener("DOMContentLoaded", () => {
 $("#updateLater").addEventListener("click", () => { $("#update").hidden = true; });
 $("#updateNow").addEventListener("click", async e => {
   const btn = e.currentTarget;
@@ -152,6 +154,7 @@ $("#updateNow").addEventListener("click", async e => {
   $("#updateText").textContent = error;
   btn.textContent = "Open download page"; btn.dataset.page = update.page;
   btn.disabled = false; $("#updateLater").disabled = false;
+});
 });
 
 /* ---- Helpers ------------------------------------------------------------- */
