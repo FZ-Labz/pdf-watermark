@@ -86,8 +86,9 @@ jobs:
             --packDir "dist/PDF Watermark" --mainExe "PDF Watermark.exe" \
             --packTitle "PDF Watermark" --packAuthors "FZ Labz" \
             --icon packaging/icon.ico --outputDir releases             --framework webview2
-          # A friendlier name for the file people download.
-          mv "releases/$PACK_ID-win-Setup.exe" releases/PDF-Watermark-Setup.exe
+          # A friendlier name for the file people download. vpk upload still
+          # wants its own name, so keep both until the release is published.
+          cp "releases/$PACK_ID-win-Setup.exe" releases/PDF-Watermark-Setup.exe
           ls -la releases
 
       # Install with the real Setup.exe, as a user would, and open the
@@ -128,3 +129,5 @@ jobs:
             --outputDir releases --publish --tag "$GITHUB_REF_NAME" \
             --releaseName "PDF Watermark $GITHUB_REF_NAME"
           gh release edit "$GITHUB_REF_NAME" --notes-file notes.md
+          gh release delete-asset "$GITHUB_REF_NAME" "$PACK_ID-win-Setup.exe" --yes
+          gh release upload "$GITHUB_REF_NAME" releases/PDF-Watermark-Setup.exe
