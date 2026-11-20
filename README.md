@@ -22,7 +22,7 @@ The installer (`PDF-Watermark-Setup.exe`) is built by GitHub Actions from this r
 
 ## 🔒 Privacy and uninstalling
 
-Documents are processed locally. The app stores its settings in `%APPDATA%\PDF Watermark`. To uninstall it, delete the executable. You can also delete the settings folder.
+Documents are processed locally. The app stores its settings in `%APPDATA%\PDF Watermark`. To uninstall it, open Windows **Settings > Apps > Installed apps**, find PDF Watermark and choose **Uninstall**. You can also delete the settings folder.
 
 ## Help
 
