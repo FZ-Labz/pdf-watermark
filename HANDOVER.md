@@ -132,7 +132,11 @@ What each release contains:
 - `PDFWatermark-win-Portable.zip`, a portable copy for anyone who can't run installers.
 - A `.nupkg` file, `releases.win.json` and `RELEASES`. Installed copies read these to update themselves. Don't delete them from old releases, because they're used to build small delta updates.
 
-When the installed app opens, it checks GitHub Releases. If there's a newer version, it shows a notice with an **Update now** button. Settings in `%APPDATA%` are kept across updates.
+The installed app checks for a newer release when it opens and every 2 minutes while it stays open. If there is one, a card appears in the top-right corner, on whichever step is showing, with an **Update now** button. The app downloads the update, restarts by itself, and shows "You're now on version …" once. The version is always shown next to the app name in the header, and Windows Settings → Apps shows the same number. Settings in `%APPDATA%` are kept across updates.
+
+To keep within GitHub's limit of 60 API calls an hour per internet connection, each check first reads the small `releases.win.json` file from the latest release's downloads, which doesn't count towards that limit. It only calls the API once there's actually something new.
+
+To test an update without publishing one, build a version into a folder with `vpk pack` and start the installed app with `PDF_WATERMARK_UPDATE_URL` set to that folder. Velopack ignores labels like `-test.1`, so `1.2.1-test.1` counts as `1.2.1`. Give test builds a real number below the next release.
 
 If you upgrade Velopack, change the version in two places together: `velopack==…` in `requirements.txt` and `VPK_VERSION` in `.github/workflows/release.yml`.
 
