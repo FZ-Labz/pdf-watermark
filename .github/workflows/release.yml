@@ -73,6 +73,11 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: tests/package-lock.json
 
       # Writes the version into VERSION for the rest of the build (the file is
       # not committed back; the tag records it).
@@ -136,6 +141,14 @@ jobs:
           $run = Start-Process $app -ArgumentList '--self-test','--no-update' -Wait -PassThru
           Get-Content "$env:APPDATA\PDF Watermark\app.log" -Tail 20
           if ($run.ExitCode -ne 0) { throw "The installed app failed its self-test" }
+
+      # Exercise the real updater with a local feed and a separate package ID.
+      - name: Test an installed Windows upgrade
+        timeout-minutes: 12
+        run: |
+          npm ci --prefix tests
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node tests/windows_upgrade.cjs
 
       - uses: actions/upload-artifact@v4
         with:

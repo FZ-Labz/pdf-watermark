@@ -1,0 +1,10 @@
+{
+  "name": "pdf-watermark-tests",
+  "private": true,
+  "scripts": {
+    "test": "node --test test_update_card.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.58.2"
+  }
+}

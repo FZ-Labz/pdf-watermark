@@ -24,6 +24,33 @@ Run `python app.py` to open the desktop application, or run
 
 Generate test PDFs with the test suite instead of committing real documents.
 
+The Python suite batches related PDF cases in multi-page files and checks the saved outputs. `tests/test_updater.py`
+uses controlled feeds and a fake Velopack manager to cover update discovery and installation errors without network access.
+Run the update-card browser tests with Node.js 22 and Playwright:
+
+```sh
+npm ci --prefix tests
+npx --prefix tests playwright install chromium
+npm test --prefix tests
+```
+
+The release workflow also checks an actual Windows upgrade on a disposable runner using a local Velopack feed and a
+separate package ID. It installs an older test package, clicks **Update now**, and verifies the restart, confirmation,
+and settings. To exercise the native update locally, build the Windows app, put `vpk` on `PATH`, and run
+`node tests/windows_upgrade.cjs --portable`.
+
+To collect the visual test outputs and build a local sign-off gallery, use a fresh review directory:
+
+```powershell
+$review = 'path/to/review-directory'
+python -m pytest tests --review-images $review --junitxml "$review/pytest-results.xml"
+$env:PDF_WATERMARK_REVIEW_IMAGES = (Resolve-Path $review).Path
+npm test --prefix tests
+python tests/build_review_gallery.py $review
+```
+
+Open `index.html` inside the review directory. Each image can be opened at full size and marked as reviewed.
+
 ## Project structure
 
 ```bash
